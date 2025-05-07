@@ -86,7 +86,7 @@ export default function AgreementForm() {
       alert('Something went wrong. Please try again.');
     } else {
       alert('Agreement submitted successfully!');
-      router.push('/admin');
+      router.push('/admin/form');
     }
   };
 

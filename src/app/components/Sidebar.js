@@ -12,6 +12,7 @@ export default function Sidebar({ children, role, email }) {
   const links = {
     admin: [
       { name: 'Dashboard', href: '/admin' },
+      { name: 'Agreements', href: '/admin/agreements' },
       { name: 'Add Agreement', href: '/admin/form' },
       { name: 'Activities', href: '/admin/activities' },
       { name: 'Partners', href: '/admin/partners' },
