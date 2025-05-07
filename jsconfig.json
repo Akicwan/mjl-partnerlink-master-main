@@ -1,0 +1,13 @@
+{
+  "compilerOptions": {
+    "baseUrl": ".",          // Set the base directory to the root of your project
+    "paths": {
+      "@/*": ["./src/*"]     // Create an alias for the src folder (change if your structure is different)
+    }
+  },
+  "include": [
+    "src/**/*",              // Include all files in the src folder
+    "next-env.d.ts",         // Ensure Next.js types are included
+    "**/*.js"                // Include all JavaScript files
+  ]
+}
