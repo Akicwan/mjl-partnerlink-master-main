@@ -29,7 +29,7 @@ export default function AgreementsPage() {
   useEffect(() => {
     const fetchAgreements = async () => {
       setLoading(true);
-      const { data, error } = await supabase.from('agreements').select('*');
+      const { data, error } = await supabase.from('agreements_2').select('*');
       if (error) {
         console.error("Error fetching agreement data:", error);
         setAgreements([]);
@@ -62,7 +62,7 @@ export default function AgreementsPage() {
           <p>No agreements found.</p>
         ) : (
           <div className="bg-white rounded-2xl shadow-md p-6 border border-gray-200">
-            <h2 className="text-xl font-semibold mb-4 text-[#1F2163]">All Agreements</h2>
+            <h2 className="text-xl font-semibold mb-4 text-[#1F2163]"></h2>
 
             <Table>
               <TableHeader>
@@ -71,12 +71,15 @@ export default function AgreementsPage() {
                   <TableHead className="font-semibold">Agreement Type</TableHead>
                   <TableHead className="font-semibold">Start Date</TableHead>
                   <TableHead className="font-semibold">End Date</TableHead>
-                  <TableHead className="font-semibold">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {agreements.map((item, idx) => (
-                  <TableRow key={idx} className="hover:bg-gray-50">
+                  <TableRow
+                    key={idx}
+                    onClick={() => openModal(item)}
+                    className="hover:bg-gray-100 cursor-pointer transition duration-150"
+                  >
                     <TableCell>{item.university}</TableCell>
                     <TableCell>{item.agreement_type}</TableCell>
                     <TableCell>
@@ -92,14 +95,6 @@ export default function AgreementsPage() {
                         month: 'long',
                         year: 'numeric',
                       })}
-                    </TableCell>
-                    <TableCell>
-                      <button
-                        onClick={() => openModal(item)}
-                        className="text-blue-600 hover:text-blue-800 transition duration-200"
-                      >
-                        View Details
-                      </button>
                     </TableCell>
                   </TableRow>
                 ))}

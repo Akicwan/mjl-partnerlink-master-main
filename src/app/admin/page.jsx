@@ -55,9 +55,9 @@ export default function AdminDashboard() {
     const fetchData = async () => {
       setLoading(true);
 
-      // Fetch grouped data for bar chart
+      // Fetch agreement counts grouped by university
       const { data: allData, error: allError } = await supabase
-        .from('agreements')
+        .from('agreements_2')
         .select('university');
 
       if (allError) {
@@ -73,21 +73,21 @@ export default function AdminDashboard() {
         const formatted = Object.entries(grouped).map(([university, agreements]) => ({
           university,
           agreements,
-          activities: Math.floor(Math.random() * 10) + 1, // placeholder
+          activities: Math.floor(Math.random() * 10) + 1, // Random placeholder
         }));
 
         setAgreementData(formatted);
       }
 
-      // Fetch recent 4 agreements with start_date and end_date
+      // Fetch 4 most recent agreements
       const { data: recent, error: recentError } = await supabase
-        .from('agreements')
+        .from('agreements_2')
         .select('university, agreement_type, start_date, end_date')
-        .order('created_at', { ascending: false })
+        
         .limit(4);
 
       if (recentError) {
-        console.error("Error fetching recent agreements:", recentError);
+        console.error("Error fetching recent agreements:", JSON.stringify(recentError, null, 2));
         setRecentAgreements([]);
       } else {
         setRecentAgreements(recent);
@@ -110,7 +110,7 @@ export default function AdminDashboard() {
           <p>No agreements found.</p>
         ) : (
           <div className="flex flex-col gap-8">
-            {/* Chart and Summary */}
+            {/* Chart + Summary */}
             <div className="flex flex-col lg:flex-row gap-6">
               <div className="w-full lg:w-2/3 h-[400px] bg-white p-4 rounded-2xl shadow-md border border-gray-100">
                 <ResponsiveContainer width="100%" height="100%">
@@ -185,6 +185,9 @@ export default function AdminDashboard() {
                 </TableBody>
               </Table>
             </div>
+
+        
+          
           </div>
         )}
       </div>
