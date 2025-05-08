@@ -1,5 +1,7 @@
 @import "tailwindcss";
 @import "tw-animate-css";
+@import url('leaflet/dist/leaflet.css');
+
 
 @custom-variant dark (&:is(.dark *));
 
@@ -118,5 +120,22 @@
   }
   body {
     @apply bg-background text-foreground;
+  }
+}
+
+@layer utilities {
+  @keyframes modalShow {
+    0% {
+      transform: scale(0.9);
+      opacity: 0;
+    }
+    100% {
+      transform: scale(1);
+      opacity: 1;
+    }
+  }
+
+  .animate-modal-show {
+    animation: modalShow 0.3s ease-out;
   }
 }

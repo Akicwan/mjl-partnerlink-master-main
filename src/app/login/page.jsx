@@ -37,13 +37,12 @@ export default function LoginPage() {
       }
 
       if (rememberMe) {
-        // Save the session for persistent login (cookies or localStorage can be used here)
         const { data: sessionData, error: sessionError } = await supabase.auth.getSession()
         if (sessionError) {
           setError(sessionError.message)
           return
         }
-        localStorage.setItem('supabaseSession', JSON.stringify(sessionData)) // Storing session info in localStorage
+        localStorage.setItem('supabaseSession', JSON.stringify(sessionData))
       }
 
       if (userProfile.role === 'admin') {
@@ -58,13 +57,24 @@ export default function LoginPage() {
 
   return (
     <div style={{
-      display: 'flex', justifyContent: 'center', alignItems: 'center',
-      height: '100vh', backgroundColor: '#692B2C'
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'center',
+      justifyContent: 'center',
+      height: '100vh',
+      backgroundColor: '#692B2C',
+      padding: '1rem'
     }}>
       <form onSubmit={handleLogin} style={{
-        backgroundColor: 'white', padding: '2rem', borderRadius: '8px',
-        boxShadow: '0 0 10px rgba(0, 0, 0, 0.1)', width: '100%', maxWidth: '400px',
-        display: 'flex', flexDirection: 'column', alignItems: 'center'
+        backgroundColor: 'white',
+        padding: '2rem',
+        borderRadius: '8px',
+        boxShadow: '0 0 10px rgba(0, 0, 0, 0.1)',
+        width: '100%',
+        maxWidth: '400px',
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center'
       }}>
         <img 
           src="/MJL-logo.png" 
@@ -102,7 +112,6 @@ export default function LoginPage() {
           />
         </div>
 
-        {/* Remember Me Checkbox */}
         <div style={{ display: 'flex', alignItems: 'center', width: '100%' }}>
           <input
             type="checkbox"
@@ -129,13 +138,20 @@ export default function LoginPage() {
             color: 'white',
             fontSize: '16px',
             cursor: 'pointer',
+            transition: 'background-color 0.3s ease, transform 0.2s ease'
           }}
-          className="transition duration-300 ease-in-out transform hover:bg-[#B78B29] hover:scale-105"
+          onMouseEnter={(e) => {
+            e.target.style.backgroundColor = '#B78B29'
+            e.target.style.transform = 'scale(1.02)'
+          }}
+          onMouseLeave={(e) => {
+            e.target.style.backgroundColor = '#D9AC42'
+            e.target.style.transform = 'scale(1)'
+          }}
         >
           Login
         </button>
 
-        {/* Redirect to reset-password page */}
         <p
           onClick={() => router.push('/login/reset-password')}
           style={{
@@ -149,6 +165,35 @@ export default function LoginPage() {
           Forgot Password?
         </p>
       </form>
+
+      {/* Back to Public Page Button OUTSIDE the form */}
+      <button
+        type="button"
+        onClick={() => router.push('/PublicPage')}
+        style={{
+          marginTop: '1.5rem',
+          padding: '10px 20px',
+          backgroundColor: '#1F2163',
+          color: 'white',
+          border: 'none',
+          borderRadius: '8px',
+          fontSize: '15px',
+          fontWeight: '600',
+          cursor: 'pointer',
+          transition: 'all 0.3s ease',
+          boxShadow: '0 4px 12px rgba(0, 0, 0, 0.2)'
+        }}
+        onMouseEnter={(e) => {
+          e.target.style.backgroundColor = '#2e3192'
+          e.target.style.transform = 'scale(1.05)'
+        }}
+        onMouseLeave={(e) => {
+          e.target.style.backgroundColor = '#1F2163'
+          e.target.style.transform = 'scale(1)'
+        }}
+      >
+        ← Back to Public Page
+      </button>
     </div>
   )
 }
