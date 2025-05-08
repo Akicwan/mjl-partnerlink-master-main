@@ -85,7 +85,7 @@ export default function AgreementForm() {
 
 
   return (
-    <Sidebar role="admin" userName={userEmail || "Loading..."}>
+    <Sidebar role="admin" email={userEmail}>
       <form onSubmit={handleSubmit} className="space-y-6">
         <h2 className="text-2xl font-semibold text-black">Agreement Details</h2>
 
