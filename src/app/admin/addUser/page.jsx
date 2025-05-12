@@ -8,14 +8,16 @@ import { useRouter } from 'next/navigation';
 export default function AddUserPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [role, setRole] = useState('admin');
+  const [showPassword, setShowPassword] = useState(false);
+  const [role, setRole] = useState('partner');
   const [university, setUniversity] = useState('');
   const [userEmail, setUserEmail] = useState('');
-  const [message, setMessage] = useState(null);
-  const [messageType, setMessageType] = useState(''); // success or error
+  const [users, setUsers] = useState([]);
+  const [showForm, setShowForm] = useState(false);
+  const [filterRole, setFilterRole] = useState('partner');
+  const [editingUser, setEditingUser] = useState(null);
+  const [message, setMessage] = useState('');
   const router = useRouter();
-  const [showPassword, setShowPassword] = useState(false);
-
 
   useEffect(() => {
     const getUser = async () => {
@@ -26,151 +28,251 @@ export default function AddUserPage() {
     getUser();
   }, [router]);
 
+  useEffect(() => {
+    fetchUsers();
+  }, []);
+
+  const fetchUsers = async () => {
+    const { data, error } = await supabase.from('users').select('*');
+    if (!error) setUsers(data);
+  };
+
+  const filteredUsers = users.filter((u) => u.role === filterRole);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
-
-    setMessage(null);
+    setMessage('');
 
     try {
-      // Create user in auth
-      const { data: authUser, error: authError } = await supabase.auth.admin.createUser({
-        email,
-        password,
-        email_confirm: true,
-      });
+      if (editingUser) {
+        const { error: updateError } = await supabase
+          .from('users')
+          .update({
+            email,
+            role,
+            university: role === 'partner' ? university : null,
+          })
+          .eq('id', editingUser.id);
 
-      if (authError) throw authError;
+        if (updateError) throw updateError;
 
-      // Insert into users table
-      const { error: dbError } = await supabase.from('users').insert({
-        id: authUser.user.id,
-        email,
-        role,
-        university: role === 'partner' ? university : null,
-      });
+        setMessage('User updated successfully!');
+      } else {
+        const { data: authUser, error: authError } = await supabase.auth.admin.createUser({
+          email,
+          password,
+          email_confirm: true,
+        });
 
-      if (dbError) throw dbError;
+        if (authError) throw authError;
 
-      setMessageType('success');
-      setMessage('User created successfully!');
-      setEmail('');
-      setPassword('');
-      setRole('admin');
-      setUniversity('');
+        const { error: dbError } = await supabase.from('users').insert({
+          id: authUser.user.id,
+          email,
+          role,
+          university: role === 'partner' ? university : null,
+        });
+
+        if (dbError) throw dbError;
+
+        setMessage('User created successfully!');
+      }
+
+      resetForm();
+      await fetchUsers();
     } catch (error) {
-      setMessageType('error');
       setMessage(error.message || 'An error occurred');
     }
   };
 
-  if (!userEmail) return <p className="p-6">Loading...</p>;
+  const handleEdit = (user) => {
+    setEditingUser(user);
+    setEmail(user.email);
+    setRole(user.role);
+    setUniversity(user.university || '');
+    setShowForm(true);
+  };
+
+  const handleDelete = async (userId) => {
+    if (window.confirm('Are you sure you want to delete this user?')) {
+      try {
+        await supabase.from('users').delete().eq('id', userId);
+        await supabase.auth.admin.deleteUser(userId);
+        await fetchUsers();
+        setMessage('User deleted successfully!');
+      } catch (error) {
+        setMessage(error.message || 'Failed to delete user');
+      }
+    }
+  };
+
+  const resetForm = () => {
+    setEmail('');
+    setPassword('');
+    setRole(filterRole);
+    setUniversity('');
+    setShowForm(false);
+    setEditingUser(null);
+    setMessage('');
+  };
+
+  if (!userEmail) return <div className="p-6">Loading...</div>;
 
   return (
     <Sidebar role="admin" email={userEmail}>
-      <div className="animate-fadeIn max-w-xl mx-auto bg-white p-8 rounded-2xl shadow-2xl border border-gray-200">
-        <h2 className="text-2xl font-bold text-[#1F2163] mb-6">Add New User</h2>
-
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="block mb-1 font-medium text-gray-700">Email</label>
-            <input
-              type="email"
-              required
-              className="w-full border rounded-md px-4 py-2"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-            />
+      <div className="p-8">
+        <div className="max-w-6xl mx-auto">
+          <div className="flex justify-between items-center mb-8">
+            <h2 className="text-2xl font-bold text-[#1F2163]">Manage Users</h2>
+            <button
+              onClick={() => {
+                resetForm();
+                setShowForm(!showForm);
+              }}
+              className="bg-[#D9AC42] text-white px-4 py-2 rounded-lg hover:bg-[#c3932d] transition-colors"
+            >
+              {showForm ? 'Close' : 'Add User'}
+            </button>
           </div>
 
-                      <div>
-              <label className="block mb-1 font-medium text-gray-700">Password</label>
-              <div className="relative">
-                <input
-                  type={showPassword ? 'text' : 'password'}
-                  required
-                  className="w-full border rounded-md px-4 py-2 pr-10"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword((prev) => !prev)}
-                  className="absolute inset-y-0 right-0 flex items-center px-3 text-gray-500 hover:text-gray-800 focus:outline-none"
-                >
-                  {showPassword ? (
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-5.523 0-10-4.477-10-10 0-1.013.152-1.987.438-2.907m16.708 10.708A9.953 9.953 0 0019 12c0-1.656-.402-3.217-1.116-4.58M3 3l18 18" />
-                    </svg>
-                  ) : (
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0zm4.243-4.243a9.966 9.966 0 00-14.486 0M1.757 12a9.966 9.966 0 0014.486 0m0 0a9.966 9.966 0 001.415-1.415M1.757 12a9.966 9.966 0 001.415 1.415M12 3v1m0 16v1m9-9h-1M4 12H3" />
-                    </svg>
+          <div className="flex border-b border-gray-200 mb-6">
+            <button
+              className={`px-4 py-2 font-medium ${filterRole === 'partner' ? 'text-[#1F2163] border-b-2 border-[#1F2163]' : 'text-gray-500'}`}
+              onClick={() => setFilterRole('partner')}
+            >
+              Partner PICs
+            </button>
+            <button
+              className={`px-4 py-2 font-medium ${filterRole === 'admin' ? 'text-[#1F2163] border-b-2 border-[#1F2163]' : 'text-gray-500'}`}
+              onClick={() => setFilterRole('admin')}
+            >
+              Admins
+            </button>
+          </div>
+
+          {showForm && (
+            <div className="bg-gray-100 p-6 rounded-lg shadow-md mb-8">
+              <h3 className="text-lg font-semibold mb-4 text-[#1F2163]">
+                {editingUser ? 'Edit User' : 'Add New User'}
+              </h3>
+              <form onSubmit={handleSubmit} className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                    <input
+                      type="email"
+                      required
+                      className="w-full p-2 rounded border border-gray-300 bg-white"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                    />
+                  </div>
+
+                  {!editingUser && (
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Password</label>
+                      <div className="relative">
+                        <input
+                          type={showPassword ? 'text' : 'password'}
+                          required
+                          className="w-full p-2 rounded border border-gray-300 bg-white"
+                          value={password}
+                          onChange={(e) => setPassword(e.target.value)}
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowPassword(!showPassword)}
+                          className="absolute right-2 top-2 text-sm text-gray-600"
+                        >
+                          {showPassword ? 'Hide' : 'Show'}
+                        </button>
+                      </div>
+                    </div>
                   )}
-                </button>
+
+                  {filterRole === 'partner' && (
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">University</label>
+                      <input
+                        type="text"
+                        className="w-full p-2 rounded border border-gray-300 bg-white"
+                        value={university}
+                        onChange={(e) => setUniversity(e.target.value)}
+                        required={role === 'partner'}
+                      />
+                    </div>
+                  )}
+                </div>
+
+                <div className="flex justify-end gap-3 pt-2">
+                  <button
+                    type="button"
+                    onClick={resetForm}
+                    className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="px-4 py-2 bg-[#1F2163] text-white rounded-md hover:bg-[#0F1153]"
+                  >
+                    {editingUser ? 'Update User' : 'Create User'}
+                  </button>
+                </div>
+                {message && <p className="text-sm text-green-700 mt-2">{message}</p>}
+              </form>
+            </div>
+          )}
+
+          <div className="bg-white rounded-lg shadow overflow-hidden">
+            {filteredUsers.length === 0 ? (
+              <div className="p-6 text-center text-gray-500">
+                No {filterRole === 'partner' ? 'Partner PICs' : 'Admins'} found
               </div>
-            </div>
-
-
-          <div>
-            <label className="block mb-1 font-medium text-gray-700">Role</label>
-            <select
-              className="w-full border rounded-md px-4 py-2"
-              value={role}
-              onChange={(e) => setRole(e.target.value)}
-            >
-              <option value="admin">Admin</option>
-              <option value="partner">Partner</option>
-            </select>
+            ) : (
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
+                    {filterRole === 'partner' && (
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">University</th>
+                    )}
+                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {filteredUsers.map((user) => (
+                    <tr key={user.id}>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {user.email}
+                      </td>
+                      {filterRole === 'partner' && (
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          {user.university || '-'}
+                        </td>
+                      )}
+                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                        <button
+                          onClick={() => handleEdit(user)}
+                          className="text-[#1F2163] hover:text-[#0F1153] mr-4"
+                        >
+                          Edit
+                        </button>
+                        <button
+                          onClick={() => handleDelete(user.id)}
+                          className="text-red-600 hover:text-red-900"
+                        >
+                          Delete
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
           </div>
-
-          {role === 'partner' && (
-            <div>
-              <label className="block mb-1 font-medium text-gray-700">University</label>
-              <input
-                type="text"
-                required
-                className="w-full border rounded-md px-4 py-2"
-                value={university}
-                onChange={(e) => setUniversity(e.target.value)}
-              />
-            </div>
-          )}
-
-          <button
-            type="submit"
-            className="bg-[#D9AC42] hover:bg-[#FFB347] text-white font-semibold py-2 px-6 rounded-md transition-all"
-          >
-            Add User
-          </button>
-
-          {message && (
-            <div
-              className={`mt-4 px-4 py-2 rounded-md text-sm ${
-                messageType === 'success' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
-              }`}
-            >
-              {message}
-            </div>
-          )}
-        </form>
+        </div>
       </div>
-
-      <style jsx>{`
-        .animate-fadeIn {
-          animation: fadeIn 0.4s ease-out forwards;
-        }
-
-        @keyframes fadeIn {
-          from {
-            opacity: 0;
-            transform: translateY(20px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
-      `}</style>
     </Sidebar>
   );
 }

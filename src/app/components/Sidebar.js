@@ -14,15 +14,15 @@ export default function Sidebar({ children, role, email }) {
       { name: 'Dashboard', href: '/admin' },
       { name: 'Agreements', href: '/admin/agreements' },
       { name: 'Add Agreement', href: '/admin/form' },
-      { name: 'Add User', href: '/admin/addUser' },
-      { name: 'Activities', href: '/admin/activities' },
-      { name: 'Partners', href: '/admin/partners' },
+      { name: 'Users', href: '/admin/addUser' },
+     
+      
       
     ],
     partner: [
       { name: 'Dashboard', href: '/partner' },
-      { name: 'My Agreements', href: '/partner/agreements' },
-      { name: 'Activities', href: '/partner/activities' },
+      //{ name: 'My Agreements', href: '/partner/agreements' },
+      //{ name: 'Activities', href: '/partner/activities' },
     ],
   };
 
