@@ -2,6 +2,8 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '../lib/supabaseClient'
+import { Eye, EyeOff } from 'lucide-react'
+
 
 export default function LoginPage() {
   const [email, setEmail] = useState('')
@@ -9,6 +11,9 @@ export default function LoginPage() {
   const [rememberMe, setRememberMe] = useState(false)
   const [error, setError] = useState('')
   const router = useRouter()
+  const [showPassword, setShowPassword] = useState(false)
+ 
+
 
   const handleLogin = async (event) => {
     event.preventDefault()
@@ -97,20 +102,54 @@ export default function LoginPage() {
           />
         </div>
 
-        <div style={{ marginBottom: '0.5rem', width: '100%' }}>
-          <label style={{ color: 'black', fontSize: '14px' }}>Password:</label><br />
-          <input
-            type="password"
-            name="password"
-            required
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            style={{
-              width: '100%', padding: '10px', border: '1px solid #ccc', borderRadius: '4px',
-              backgroundColor: '#f9f9f9', color: 'black', fontSize: '14px'
-            }}
-          />
-        </div>
+          <div style={{ marginBottom: '1rem', width: '100%', position: 'relative' }}>
+            <label style={{ color: 'black', fontSize: '14px' }}>Password:</label><br />
+            <input
+              type={showPassword ? 'text' : 'password'}
+              name="password"
+              required
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              style={{
+                width: '100%',
+                padding: '10px 40px 10px 10px',
+                border: '1px solid #ccc',
+                borderRadius: '4px',
+                backgroundColor: '#f9f9f9',
+                color: 'black',
+                fontSize: '14px'
+              }}
+            />
+            <span
+              onClick={() => setShowPassword(!showPassword)}
+              style={{
+                position: 'absolute',
+                top: '70%',
+                right: '10px',
+                transform: 'translateY(-50%)',
+                cursor: 'pointer',
+                color: '#333',
+                fontSize: '16px'
+              }}
+            >
+                {showPassword ? (
+                  <EyeOff 
+                    size={20} 
+                    style={{ position: 'absolute', top: '50%', right: '10px', transform: 'translateY(-50%)', cursor: 'pointer' }} 
+                    onClick={() => setShowPassword(false)}
+                  />
+                ) : (
+                  <Eye 
+                    size={20} 
+                    style={{ position: 'absolute', top: '50%', right: '10px', transform: 'translateY(-50%)', cursor: 'pointer' }} 
+                    onClick={() => setShowPassword(true)}
+                  />
+                )}
+            </span>
+          </div>
+
+               
+
 
         <div style={{ display: 'flex', alignItems: 'center', width: '100%' }}>
           <input

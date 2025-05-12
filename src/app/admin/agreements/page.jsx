@@ -10,8 +10,8 @@ export default function AgreementsPage() {
   const [userEmail, setUserEmail] = useState(null);
   const [agreements, setAgreements] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [lastDeleted, setLastDeleted] = useState(null);
-  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedAgreement, setSelectedAgreement] = useState(null);
+  const [modalOpen, setModalOpen] = useState(false);
   const router = useRouter();
 
   useEffect(() => {
@@ -41,118 +41,60 @@ export default function AgreementsPage() {
     if (userEmail) fetchAgreements();
   }, [userEmail]);
 
-  const handleRowClick = (id) => {
-    router.push(`/admin/agreements/${id}`);
+  const openModal = (agreement) => {
+    setSelectedAgreement(agreement);
+    setModalOpen(true);
   };
 
-  const handleAdd = () => {
-    router.push('/admin/form');
+  const closeModal = () => {
+    setModalOpen(false);
+    setTimeout(() => setSelectedAgreement(null), 300);
   };
-
-  const handleDelete = async (id) => {
-    const agreementToDelete = agreements.find(item => item.id === id);
-    if (!confirm(`Are you sure you want to delete the agreement with ${agreementToDelete.university}?`)) return;
-
-    const { error } = await supabase.from('agreements_2').delete().eq('id', id);
-    if (!error) {
-      setLastDeleted(agreementToDelete);
-      setAgreements(prev => prev.filter(item => item.id !== id));
-      setTimeout(() => setLastDeleted(null), 5000);
-    } else {
-      console.error("Delete failed:", error.message);
-    }
-  };
-
-  const handleUndo = async () => {
-    if (lastDeleted) {
-      const { error } = await supabase.from('agreements_2').insert([lastDeleted]);
-      if (!error) {
-        setAgreements(prev => [lastDeleted, ...prev]);
-        setLastDeleted(null);
-      } else {
-        console.error("Undo failed:", error.message);
-      }
-    }
-  };
-
-  const filteredAgreements = agreements.filter(item =>
-    item.university.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    item.agreement_type.toLowerCase().includes(searchQuery.toLowerCase())
-  );
 
   if (!userEmail || loading) return <p className="p-6">Loading...</p>;
 
   return (
     <Sidebar role="admin" email={userEmail}>
       <div className="relative text-black p-6 bg-white rounded-2xl shadow-lg">
-        <div className="flex justify-between items-center mb-6">
-          <h1 className="text-3xl font-bold text-[#1F2163]">Agreements</h1>
-          <button
-            onClick={handleAdd}
-            className="bg-[#D9AC42] text-white px-4 py-2 rounded hover:bg-[#c3932d]"
-          >
-            + Add Agreement
-          </button>
-        </div>
+        <h1 className="text-3xl font-bold text-[#1F2163] mb-6">Agreements</h1>
 
-        {/* Search Input */}
-        <div className="mb-4">
-          <input
-            type="text"
-            placeholder="Search by university or type..."
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring focus:border-blue-300"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-          />
-        </div>
-
-        {lastDeleted && (
-          <div className="bg-yellow-100 text-yellow-800 p-4 mb-4 rounded shadow">
-            <span>Agreement with {lastDeleted.university} deleted. </span>
-            <button onClick={handleUndo} className="underline text-blue-600 hover:text-blue-800">Undo</button>
-          </div>
-        )}
-
-        {filteredAgreements.length === 0 ? (
+        {agreements.length === 0 ? (
           <p>No agreements found.</p>
         ) : (
           <div className="bg-white rounded-2xl shadow-md p-6 border border-gray-200">
+            <h2 className="text-xl font-semibold mb-4 text-[#1F2163]"></h2>
+
             <Table>
               <TableHeader>
                 <TableRow className="bg-[#f3f4f6] text-[#1F2163]">
-                  <TableHead>University</TableHead>
-                  <TableHead>Type</TableHead>
-                  <TableHead>Start</TableHead>
-                  <TableHead>End</TableHead>
-                  <TableHead>Actions</TableHead>
+                  <TableHead className="font-semibold">University</TableHead>
+                  <TableHead className="font-semibold">Agreement Type</TableHead>
+                  <TableHead className="font-semibold">Start Date</TableHead>
+                  <TableHead className="font-semibold">End Date</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredAgreements.map((item, idx) => (
+                {agreements.map((item, idx) => (
                   <TableRow
                     key={idx}
-                    className="hover:bg-gray-100 transition"
+                    onClick={() => openModal(item)}
+                    className="hover:bg-gray-100 cursor-pointer transition duration-150"
                   >
-                    <TableCell
-                      className="cursor-pointer"
-                      onClick={() => handleRowClick(item.id)}
-                    >
-                      {item.university}
-                    </TableCell>
+                    <TableCell>{item.university}</TableCell>
                     <TableCell>{item.agreement_type}</TableCell>
                     <TableCell>
-                      {new Date(item.start_date).toLocaleDateString('en-MY')}
+                      {new Date(item.start_date).toLocaleDateString('en-MY', {
+                        day: 'numeric',
+                        month: 'long',
+                        year: 'numeric',
+                      })}
                     </TableCell>
                     <TableCell>
-                      {new Date(item.end_date).toLocaleDateString('en-MY')}
-                    </TableCell>
-                    <TableCell>
-                      <button
-                        onClick={() => handleDelete(item.id)}
-                        className="text-red-600 hover:underline"
-                      >
-                        Remove
-                      </button>
+                      {new Date(item.end_date).toLocaleDateString('en-MY', {
+                        day: 'numeric',
+                        month: 'long',
+                        year: 'numeric',
+                      })}
                     </TableCell>
                   </TableRow>
                 ))}
@@ -161,7 +103,57 @@ export default function AgreementsPage() {
           </div>
         )}
       </div>
+
+      {/* Modal */}
+      {modalOpen && selectedAgreement && (
+        <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex justify-center items-center z-50">
+          <div
+            className="bg-white p-6 rounded-lg shadow-2xl max-w-md w-full animate-fadeInScale"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h2 className="text-2xl font-semibold text-[#1F2163] mb-4">Agreement Details</h2>
+            <p><strong>University:</strong> {selectedAgreement.university}</p>
+            <p><strong>Agreement Type:</strong> {selectedAgreement.agreement_type}</p>
+            <p><strong>Start Date:</strong> {new Date(selectedAgreement.start_date).toLocaleDateString('en-MY', {
+              day: 'numeric',
+              month: 'long',
+              year: 'numeric',
+            })}</p>
+            <p><strong>End Date:</strong> {new Date(selectedAgreement.end_date).toLocaleDateString('en-MY', {
+              day: 'numeric',
+              month: 'long',
+              year: 'numeric',
+            })}</p>
+
+            <div className="mt-6 text-right">
+              <button
+                onClick={closeModal}
+                className="bg-[#D9AC42] hover:bg-[#FFB347] transition-all text-white py-2 px-4 rounded-md"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Tailwind animation */}
+      <style jsx>{`
+        @keyframes fadeInScale {
+          0% {
+            opacity: 0;
+            transform: scale(0.9);
+          }
+          100% {
+            opacity: 1;
+            transform: scale(1);
+          }
+        }
+
+        .animate-fadeInScale {
+          animation: fadeInScale 0.3s ease-out forwards;
+        }
+      `}</style>
     </Sidebar>
   );
 }
-

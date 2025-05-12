@@ -14,6 +14,8 @@ export default function AddUserPage() {
   const [message, setMessage] = useState(null);
   const [messageType, setMessageType] = useState(''); // success or error
   const router = useRouter();
+  const [showPassword, setShowPassword] = useState(false);
+
 
   useEffect(() => {
     const getUser = async () => {
@@ -80,16 +82,34 @@ export default function AddUserPage() {
             />
           </div>
 
-          <div>
-            <label className="block mb-1 font-medium text-gray-700">Password</label>
-            <input
-              type="password"
-              required
-              className="w-full border rounded-md px-4 py-2"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-            />
-          </div>
+                      <div>
+              <label className="block mb-1 font-medium text-gray-700">Password</label>
+              <div className="relative">
+                <input
+                  type={showPassword ? 'text' : 'password'}
+                  required
+                  className="w-full border rounded-md px-4 py-2 pr-10"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword((prev) => !prev)}
+                  className="absolute inset-y-0 right-0 flex items-center px-3 text-gray-500 hover:text-gray-800 focus:outline-none"
+                >
+                  {showPassword ? (
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-5.523 0-10-4.477-10-10 0-1.013.152-1.987.438-2.907m16.708 10.708A9.953 9.953 0 0019 12c0-1.656-.402-3.217-1.116-4.58M3 3l18 18" />
+                    </svg>
+                  ) : (
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0zm4.243-4.243a9.966 9.966 0 00-14.486 0M1.757 12a9.966 9.966 0 0014.486 0m0 0a9.966 9.966 0 001.415-1.415M1.757 12a9.966 9.966 0 001.415 1.415M12 3v1m0 16v1m9-9h-1M4 12H3" />
+                    </svg>
+                  )}
+                </button>
+              </div>
+            </div>
+
 
           <div>
             <label className="block mb-1 font-medium text-gray-700">Role</label>
