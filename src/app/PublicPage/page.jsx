@@ -7,9 +7,13 @@ export default function PublicDashboard() {
   const router = useRouter();
 
   useEffect(() => {
-    if (typeof window !== 'undefined' && !window.leafletMap) {
-      // Import leaflet only on the client side
+    if (typeof window !== 'undefined') {
       import('leaflet').then(L => {
+        const existingMap = L.DomUtil.get('map');
+
+        // Prevent re-initialization if the map is already set up
+        if (existingMap && existingMap._leaflet_id) return;
+
         const map = L.map('map', {
           center: [36.2048, 138.2529], // Center of Japan
           zoom: 5,
@@ -21,7 +25,6 @@ export default function PublicDashboard() {
           keyboard: false,
         });
 
-        // Clean map style (no labels, light)
         L.tileLayer('https://{s}.basemaps.cartocdn.com/light_nolabels/{z}/{x}/{y}{r}.png', {
           attribution: '&copy; <a href="https://carto.com/">CARTO</a>',
         }).addTo(map);
@@ -30,12 +33,13 @@ export default function PublicDashboard() {
           [24.396308, 122.93457],  // Southwest corner
           [45.551483, 153.986672], // Northeast corner
         ];
+
         map.setMaxBounds(bounds);
         map.on('drag', () => {
           map.panInsideBounds(bounds, { animate: true });
         });
 
-        window.leafletMap = map; // prevent reinitializing
+        window.leafletMap = map;
       });
     }
   }, []);
