@@ -13,13 +13,11 @@ export default function PartnerDashboard() {
   const [filteredAgreements, setFilteredAgreements] = useState([]);
   const [loading, setLoading] = useState(true);
   const [typeStats, setTypeStats] = useState({});
-  const [agreementTypes, setAgreementTypes] = useState([]); // 新增：存储所有协议类型
-
+  const [agreementTypes, setAgreementTypes] = useState([]);
   const [selectedType, setSelectedType] = useState('');
   const [selectedYear, setSelectedYear] = useState('');
   const router = useRouter();
 
-  // 计算协议类型统计
   const calculateTypeStats = (agreements) => {
     const stats = {};
     agreements.forEach(agreement => {
@@ -29,7 +27,6 @@ export default function PartnerDashboard() {
     return stats;
   };
 
-  // 获取所有协议类型
   const fetchAgreementTypes = async () => {
     const { data, error } = await supabase
       .from('agreements_2')
@@ -41,12 +38,10 @@ export default function PartnerDashboard() {
       return [];
     }
 
-    // 去重并排序
     const uniqueTypes = [...new Set(data.map(item => item.agreement_type))];
     return uniqueTypes.sort();
   };
 
-  // 1. 获取用户信息
   useEffect(() => {
     const fetchUser = async () => {
       const {
@@ -58,7 +53,6 @@ export default function PartnerDashboard() {
         router.push('/login');
       } else {
         setUserEmail(user.email);
-        // 同时获取用户所属大学
         const { data: userData, error: userError } = await supabase
           .from('users')
           .select('university')
@@ -76,13 +70,11 @@ export default function PartnerDashboard() {
     fetchUser();
   }, [router]);
 
-  // 2. 获取该大学所有协议数据和协议类型
   useEffect(() => {
     const fetchData = async () => {
       if (!universityName) return;
       setLoading(true);
 
-      // 获取协议数据
       const { data, error } = await supabase
         .from('agreements_2')
         .select('*')
@@ -97,7 +89,6 @@ export default function PartnerDashboard() {
         setTypeStats(calculateTypeStats(data || []));
       }
 
-      // 获取所有协议类型选项
       const types = await fetchAgreementTypes();
       setAgreementTypes(types);
 
@@ -106,7 +97,6 @@ export default function PartnerDashboard() {
     fetchData();
   }, [universityName]);
 
-  // 3. 根据筛选项更新 filteredAgreements
   useEffect(() => {
     let filtered = agreements;
 
@@ -133,14 +123,9 @@ export default function PartnerDashboard() {
   return (
     <Sidebar role="partner" email={userEmail} userName={userName}>
       <div className="text-black space-y-6">
-        <div className="flex justify-between items-center">
-          <h1 className="text-3xl font-bold text-[#1F2163]">
-            {universityName}
-          </h1>
-          
-        </div>
+        <h1 className="text-3xl font-bold text-[#1F2163]">{universityName}</h1>
 
-        {/* 协议类型统计视图 */}
+        {/* 统计信息 */}
         <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
           <h2 className="text-lg font-semibold mb-3 text-[#1F2163]">Agreement Type Statistics</h2>
           <div className="flex flex-wrap gap-4">
@@ -155,6 +140,7 @@ export default function PartnerDashboard() {
           </div>
         </div>
 
+        {/* 筛选 */}
         <div className="flex flex-wrap gap-4 items-end">
           <div>
             <label className="block text-sm text-gray-600">Filter by Agreement Type:</label>
@@ -184,6 +170,7 @@ export default function PartnerDashboard() {
           </div>
         </div>
 
+        {/* 协议列表 */}
         <div className="bg-white rounded-lg shadow-md border border-gray-200 p-4 max-h-[calc(100vh-250px)] overflow-y-auto">
           {filteredAgreements.length === 0 ? (
             <div className="bg-yellow-100 p-4 rounded border border-yellow-300">
@@ -198,13 +185,18 @@ export default function PartnerDashboard() {
                 >
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div><strong>Agreement Type:</strong> {item.agreement_type}</div>
-                    <div><strong>Academic Collaboration:</strong> {item.academic_collab}</div>
-                    <div><strong>Research Collaboration:</strong> {item.research_collab}</div>
+                    
                     <div className="flex gap-4">
                       <div><strong>Start Date:</strong> {item.start_date}</div>
                       <div><strong>End Date:</strong> {item.end_date ?? '—'}</div>
                     </div>
                   </div>
+                  <button
+                    className="mt-4 px-4 py-2 bg-[#1F2163] text-white rounded hover:bg-[#3a3d95]"
+                    onClick={() => router.push(`/partner/details-agreement?id=${item.id}`)}
+                  >
+                    View Full Details
+                  </button>
                 </div>
               ))}
             </div>
