@@ -16,8 +16,11 @@ export default function Sidebar({ children, role, email }) {
     admin: [
       { name: 'Dashboard', href: '/admin' },
       { name: 'Agreements', href: '/admin/agreements' },
+      { name: 'Universities', href: '/admin/university'},
       { name: 'Add Agreement', href: '/admin/form' },
       { name: 'Users', href: '/admin/addUser' },
+
+      
       
     ],
     partner: [

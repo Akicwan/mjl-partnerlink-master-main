@@ -134,12 +134,23 @@ export default function AgreementForm() {
 
           {form.academic_collab && (
             <div className="grid grid-cols-2 gap-4">
-              {['jd_dd','joint_lab','co_teaching','staff_mobility','student_mobility','joint_supervision'].map(f=>(
-                <div key={f}>
-                  <label className="block font-medium text-black capitalize">{f.replace(/_/g,' ')}</label>
-                  <textarea rows={1} value={form[f]} onChange={e=>handleFormChange(f,e.target.value)} className={inputClasses} />
-                </div>
-              ))}
+              {['jd_dd','joint_lab','co_teaching','staff_mobility','student_mobility','joint_supervision'].map(f => {
+  const labelMap = {
+    jd_dd: 'Join degree / Double degree',
+    joint_lab: 'Joint lab',
+    co_teaching: 'Co teaching',
+    staff_mobility: 'Staff mobility',
+    student_mobility: 'Student mobility',
+    joint_supervision: 'Joint supervision'
+  };
+  return (
+    <div key={f}>
+      <label className="block font-medium text-black">{labelMap[f]}</label>
+      <textarea rows={1} value={form[f]} onChange={e => handleFormChange(f, e.target.value)} className={inputClasses} />
+    </div>
+  );
+})}
+
             </div>
           )}
 
