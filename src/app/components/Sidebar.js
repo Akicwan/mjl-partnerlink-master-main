@@ -23,11 +23,11 @@ export default function Sidebar({ children, role, email }) {
       { name: 'Universities', href: '/admin/university' },
       { name: 'Add Agreement', href: '/admin/form' },
       { name: 'Users', href: '/admin/addUser' },
-      { name: 'notif test', href: '/notiftest' },
+      
     ],
     partner: [
       { name: 'Dashboard', href: '/partner' },
-      { name: 'notif test', href: '/notiftestPartner' },
+      
     ],
   };
 
