@@ -166,59 +166,37 @@ const markAsRead = async (id) => {
 
            {/* Notification Icon */}
            <div className="relative" ref={notifDropdownRef}>
-            <button
-              onClick={() => setNotifDropdownOpen(!notifDropdownOpen)}
-              className="p-2 rounded-full hover:bg-[#1F2163]/80 transition-colors relative"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
-              </svg>
-              {unreadCount > 0 && (
-                <span className="absolute top-0 right-0 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
-                  {unreadCount}
-                </span>
-              )}
-            </button>
+            <div className="relative">
+<button
+  onClick={() => {
+    if (role === 'admin') {
+      router.push('/notiftest');
+    } else if (role === 'partner') {
+      router.push('/notiftestPartner');
+    }
+  }}
+  className="p-2 rounded-full hover:bg-gray-100 transition-transform transform hover:scale-110 duration-200 ease-in-out"
+>
+  <svg
+    className="w-6 h-6 text-white drop-shadow-[0_0_2px_white]"
+    fill="none"
+    stroke="white"
+    strokeWidth="2"
+    viewBox="0 0 24 24"
+  >
+    <path
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V4a2 2 0 10-4 0v1.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"
+    />
+  </svg>
+</button>
+</div>
 
             {/* Notification Dropdown */}
-            {notifDropdownOpen && (
-              <div className="absolute right-0 mt-2 w-80 bg-white rounded-lg shadow-xl z-20 overflow-hidden">
-                <div className="p-3 border-b border-gray-200 bg-[#B99950]">
-                  <h3 className="text-white font-semibold">Notifications</h3>
-                </div>
-                <div className="max-h-90 overflow-y-auto">
-                  {notifications.length === 0 ? (
-                    <div className="p-4 text-center text-gray-500">No notifications</div>
-                  ) : (
-                    notifications.map(notification => (
-                      <Link 
-                        key={notification.id}
-                        href="#"
-                        onClick={() => markAsRead(notification.id)}
-                        className={`block px-4 py-3 hover:bg-gray-50 border-b border-gray-100 ${!notification.read ? 'bg-blue-50' : ''}`}
-                      >
-                        <div className="flex justify-between">
-                          <h4 className="font-medium text-[#1F2163]">{notification.title}</h4>
-                          {!notification.read && (
-                            <span className="h-2 w-2 bg-blue-500 rounded-full"></span>
-                          )}
-                        </div>
-                        <p className="text-sm text-gray-600 mt-1">{notification.message}</p>
-                        <p className="text-xs text-gray-400 mt-2">
-                          {new Date(notification.created_at).toLocaleString()}
-                        </p>
-                      </Link>
-                    ))
-                  )}
-                </div>
-                <Link 
-                  href="/notifications"
-                  className="block text-center py-2 text-sm text-[#1F2163] font-medium hover:bg-gray-100"
-                >
-                  View All Notifications
-                </Link>
-              </div>
-            )}
+            <div className="relative">
+ 
+</div>
           </div>
 
           {/* Profile Dropdown with increased spacing */}
