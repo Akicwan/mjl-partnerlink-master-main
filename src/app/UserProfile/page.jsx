@@ -18,7 +18,7 @@ export default function UploadProfilePicture() {
   const [newPassword, setNewPassword] = useState('');
   const [confirmNewPassword, setConfirmNewPassword] = useState('');
   const [loadingPasswordUpdate, setLoadingPasswordUpdate] = useState(false);
-  
+  const [role, setRole] = useState('');
   const router = useRouter();
 
   useEffect(() => {
@@ -30,12 +30,13 @@ export default function UploadProfilePicture() {
 
       const { data, error: dbError } = await supabase
         .from('users')
-        .select('profile_picture_url')
+        .select('profile_picture_url, role')
         .eq('id', user.id)
         .single();
 
       if (data?.profile_picture_url) setImageUrl(data.profile_picture_url);
-    }
+      if (data?.role) setRole(data.role);
+    }  
 
     fetchUserData();
   }, []);
@@ -185,11 +186,12 @@ export default function UploadProfilePicture() {
         </button>
 
         <button
-          onClick={() => router.push('/admin')}
-          className="w-full mt-6 bg-gray-200 text-gray-800 py-2 rounded-md font-medium hover:bg-gray-300"
-        >
-          Back to Dashboard
-        </button>
+  onClick={() => router.push(role === 'admin' ? '/admin' : '/partner')}
+  className="w-full mt-6 bg-gray-200 text-gray-800 py-2 rounded-md font-medium hover:bg-gray-300"
+>
+  Back to Dashboard
+</button>
+
 
         {error && <p className="text-red-500 text-sm mt-4 text-center">{error}</p>}
       </div>
