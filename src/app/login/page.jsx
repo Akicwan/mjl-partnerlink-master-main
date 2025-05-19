@@ -82,9 +82,9 @@ export default function LoginPage() {
         alignItems: 'center'
       }}>
         <img 
-          src="/MJL-logo.png" 
+          src="/partnerlink.png" 
           alt="MJL PartnerLink Logo" 
-          style={{ width: '150px', height: '150px', marginBottom: '1rem', objectFit: 'contain' }} 
+          style={{ width: '450px', height: '150px', marginBottom: '1rem', objectFit: 'contain' }} 
         />
 
         <div style={{ marginBottom: '1rem', width: '100%' }}>
