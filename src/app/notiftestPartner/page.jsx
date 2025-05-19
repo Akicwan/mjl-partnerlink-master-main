@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabaseClient';
-import Sidebar from '../components/SidebarPartner';
+import Sidebar from '../components/Sidebar';
 
 export default function PartnerNotification() {
   const [notifications, setNotifications] = useState([]);
