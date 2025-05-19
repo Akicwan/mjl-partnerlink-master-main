@@ -3,6 +3,7 @@
 import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
 import { useState, useRef, useEffect } from 'react';
+import { supabase } from '../lib/supabaseClient';
 
 export default function Sidebar({ children, role, email }) {
   const router = useRouter();
@@ -12,8 +13,6 @@ export default function Sidebar({ children, role, email }) {
   const dropdownRef = useRef(null);
   const notifDropdownRef = useRef(null);
   const [avatarUrl, setAvatarUrl] = useState('/user.png');
-
-  // Notifications state (only unread)
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
 
@@ -35,68 +34,86 @@ export default function Sidebar({ children, role, email }) {
   const userName = email?.split('@')[0] || 'User';
   const navLinks = links[role] || [];
 
-  // Fetch avatar from local storage or default
   useEffect(() => {
-    // Here, replace this with your actual avatar fetching logic if you want
-    // For demo, just use default avatar:
-    setAvatarUrl('/user.png');
+    async function fetchAvatar() {
+      if (!email) return;
+
+      const { data, error } = await supabase
+        .from('users')
+        .select('profile_picture_url')
+        .eq('email', email)
+        .single();
+
+      if (error) {
+        console.error('Error fetching avatar:', error.message);
+        setAvatarUrl('/user.png');
+      } else if (data?.profile_picture_url) {
+        setAvatarUrl(data.profile_picture_url);
+      } else {
+        setAvatarUrl('/user.png');
+      }
+    }
+
+    fetchAvatar();
   }, [email]);
 
-  useEffect(() => {
-  if (!email) return;
+ // Fetch notifications
+ useEffect(() => {
+  const fetchNotifications = async () => {
+    const { data, error } = await supabase
+      .from('notifications')
+      .select('*')
+      .order('created_at', { ascending: false })
+      .limit(5);
 
-  const syncNotifs = () => {
-    const storedNotifsStr = localStorage.getItem(email);
-    const storedNotifs = storedNotifsStr ? JSON.parse(storedNotifsStr) : [];
-    const unread = storedNotifs.filter((n) => !n.read);
-    setNotifications(unread);
-    setUnreadCount(unread.length);
+    if (!error) {
+      setNotifications(data);
+      setUnreadCount(data.filter(n => !n.read).length);
+    }
   };
 
-  // Initial sync
-  syncNotifs();
-
-  // Listen to changes from other tabs
-  window.addEventListener('storage', syncNotifs);
-  return () => window.removeEventListener('storage', syncNotifs);
+  fetchNotifications();
 }, [email]);
 
+// Close dropdowns on outside click
+useEffect(() => {
+  function handleClickOutside(event) {
+    if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+      setDropdownOpen(false);
+    }
+    if (notifDropdownRef.current && !notifDropdownRef.current.contains(event.target)) {
+      setNotifDropdownOpen(false);
+    }
+  }
 
-  
+  document.addEventListener('mousedown', handleClickOutside);
+  return () => document.removeEventListener('mousedown', handleClickOutside);
+}, []);
 
-  // Close dropdowns on outside click
+const markAsRead = async (id) => {
+  const { error } = await supabase
+    .from('notifications')
+    .update({ read: true })
+    .eq('id', id);
+
+  if (!error) {
+    setNotifications(notifications.map(n => 
+      n.id === id ? {...n, read: true} : n
+    ));
+    setUnreadCount(unreadCount - 1);
+  }
+};
+
   useEffect(() => {
     function handleClickOutside(event) {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
         setDropdownOpen(false);
-      }
-      if (notifDropdownRef.current && !notifDropdownRef.current.contains(event.target)) {
-        setNotifDropdownOpen(false);
       }
     }
 
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
-
-  const markAsRead = (id) => {
-  if (!email) return;
-
-  const storedNotifsStr = localStorage.getItem(email);
-  if (!storedNotifsStr) return;
-
-  let storedNotifs = JSON.parse(storedNotifsStr);
-  storedNotifs = storedNotifs.map((notif) =>
-    notif.id === id ? { ...notif, read: true } : notif
-  );
-  localStorage.setItem(email, JSON.stringify(storedNotifs));
-
-  // Refresh notification state from updated localStorage
-  const unread = storedNotifs.filter((n) => !n.read);
-  setNotifications(unread);
-  setUnreadCount(unread.length);
-};
-
 
   const handleLogout = () => {
     router.push('/login');
@@ -106,7 +123,7 @@ export default function Sidebar({ children, role, email }) {
     <div className="flex min-h-screen bg-[#5D2E2E]">
       {/* Sidebar */}
       <div className="w-50 bg-[#D9AC42] flex flex-col p-4 shadow-xl relative">
-        {/* Logo */}
+        {/* Logo without padding */}
         <div className="mb-8 mt-4">
           <img
             src="/MJL-UTM-MJIIT-LOGO.png"
@@ -129,7 +146,9 @@ export default function Sidebar({ children, role, email }) {
                     : 'text-white font-semibold hover:bg-[#c39938]/80 hover:shadow-md'
                 }`}
               >
-                <span className="tracking-wide">{link.name}</span>
+                <span className={`${isActive ? 'opacity-100' : 'opacity-100'} tracking-wide`}>
+                  {link.name}
+                </span>
               </Link>
             );
           })}
@@ -145,26 +164,14 @@ export default function Sidebar({ children, role, email }) {
         <div className="bg-[#1F2163] rounded-t-xl px-6 py-4 flex justify-between items-center shadow-md">
           <div className="flex-1"></div>
 
-          {/* Notification Icon */}
-          <div className="relative" ref={notifDropdownRef}>
+           {/* Notification Icon */}
+           <div className="relative" ref={notifDropdownRef}>
             <button
               onClick={() => setNotifDropdownOpen(!notifDropdownOpen)}
               className="p-2 rounded-full hover:bg-[#1F2163]/80 transition-colors relative"
-              aria-label="Toggle notifications dropdown"
             >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="h-6 w-6 text-white"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"
-                />
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
               </svg>
               {unreadCount > 0 && (
                 <span className="absolute top-0 right-0 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
@@ -181,40 +188,32 @@ export default function Sidebar({ children, role, email }) {
                 </div>
                 <div className="max-h-90 overflow-y-auto">
                   {notifications.length === 0 ? (
-                    <div className="p-4 text-center text-gray-500">
-                      No unread notifications
-                    </div>
+                    <div className="p-4 text-center text-gray-500">No notifications</div>
                   ) : (
-                    notifications.map((notification) => (
-                      <button
+                    notifications.map(notification => (
+                      <Link 
                         key={notification.id}
+                        href="#"
                         onClick={() => markAsRead(notification.id)}
-                        className={`block w-full text-left px-4 py-3 hover:bg-gray-50 border-b border-gray-100 ${
-                          !notification.read ? 'bg-blue-50' : ''
-                        }`}
+                        className={`block px-4 py-3 hover:bg-gray-50 border-b border-gray-100 ${!notification.read ? 'bg-blue-50' : ''}`}
                       >
                         <div className="flex justify-between">
-                          <h4 className="font-medium text-[#1F2163]">
-                            {notification.title}
-                          </h4>
+                          <h4 className="font-medium text-[#1F2163]">{notification.title}</h4>
                           {!notification.read && (
                             <span className="h-2 w-2 bg-blue-500 rounded-full"></span>
                           )}
                         </div>
-                        <p className="text-sm text-gray-600 mt-1">
-                          {notification.message}
-                        </p>
+                        <p className="text-sm text-gray-600 mt-1">{notification.message}</p>
                         <p className="text-xs text-gray-400 mt-2">
                           {new Date(notification.created_at).toLocaleString()}
                         </p>
-                      </button>
+                      </Link>
                     ))
                   )}
                 </div>
-                <Link
-                  href="/notiftest"
+                <Link 
+                  href="/notifications"
                   className="block text-center py-2 text-sm text-[#1F2163] font-medium hover:bg-gray-100"
-                  onClick={() => setNotifDropdownOpen(false)}
                 >
                   View All Notifications
                 </Link>
@@ -222,14 +221,11 @@ export default function Sidebar({ children, role, email }) {
             )}
           </div>
 
-          {/* Profile Dropdown */}
+          {/* Profile Dropdown with increased spacing */}
           <div className="relative" ref={dropdownRef}>
             <button
               onClick={() => setDropdownOpen((prev) => !prev)}
               className="flex items-center space-x-4 text-white focus:outline-none"
-              aria-haspopup="true"
-              aria-expanded={dropdownOpen}
-              aria-label="Toggle profile menu"
             >
               <span className="font-semibold">{userName}</span>
               <img
@@ -248,7 +244,6 @@ export default function Sidebar({ children, role, email }) {
                 <Link
                   href="/UserProfile"
                   className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                  onClick={() => setDropdownOpen(false)}
                 >
                   Profile
                 </Link>
@@ -264,7 +259,9 @@ export default function Sidebar({ children, role, email }) {
         </div>
 
         {/* Content Container */}
-        <div className="bg-white flex-1 p-6 rounded-b-xl shadow-lg">{children}</div>
+        <div className="bg-white flex-1 p-6 rounded-b-xl shadow-lg">
+          {children}
+        </div>
       </div>
     </div>
   );
