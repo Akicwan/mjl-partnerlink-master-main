@@ -10,11 +10,12 @@ export default function NotifTest() {
   const [selectedTab, setSelectedTab] = useState('unread');
   const [email, setEmail] = useState('');
   const [role, setRole] = useState('');
+  const [hasSentEmails, setHasSentEmails] = useState(false);
 
-  // Updated helper to send email via Supabase Edge Function
+  // Helper to send email via Supabase Edge Function
   async function sendEmailNotification(to, subject, html) {
     try {
-      const { data, error } = await supabase.functions.invoke('sendEmail', {
+      const { data, error } = await supabase.functions.invoke('send-email', {
         body: JSON.stringify({ to, subject, html }),
       });
 
@@ -31,7 +32,9 @@ export default function NotifTest() {
   // Fetch user info (email + role)
   useEffect(() => {
     async function getUserInfo() {
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
       if (user) {
         setEmail(user.email);
 
@@ -61,9 +64,19 @@ export default function NotifTest() {
     }
   }, [email]);
 
-  // Fetch notifications from agreements_2 table and send emails
+  // Fetch notifications and send emails only after email and readIds loaded
   useEffect(() => {
-    if (!email) return; // wait for email before fetching
+    if (!email) return;
+    // Wait until readIds loaded from localStorage
+    // localStorage returns null if no key, so skip waiting if no stored value
+    if (
+      readIds.size === 0 &&
+      localStorage.getItem(`readNotifications-${email}`) !== null
+    ) {
+      return;
+    }
+
+    if (hasSentEmails) return; // prevent duplicate sends in this session
 
     async function fetchNotifications() {
       const { data: agreements, error } = await supabase
@@ -131,18 +144,19 @@ export default function NotifTest() {
 
       setNotifications(notes);
 
-      // Send email notifications for each note (avoid duplicate sends if needed)
+      // Send emails only for unread notifications
       for (const note of notes) {
-        await sendEmailNotification(
-          email,
-          note.title,
-          `<p>${note.message}</p>`
-        );
+        const key = note.id + '-' + note.type;
+        if (!readIds.has(key)) {
+          await sendEmailNotification(email, note.title, `<p>${note.message}</p>`);
+        }
       }
+
+      setHasSentEmails(true); // mark emails as sent for this session
     }
 
     fetchNotifications();
-  }, [email]);
+  }, [email, readIds, hasSentEmails]);
 
   // Update read/unread checkbox and save to localStorage
   const updateReadStatus = (idTypeKey, isNowRead) => {
