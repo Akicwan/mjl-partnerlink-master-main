@@ -40,7 +40,11 @@ export default function AgreementsPage() {
         console.error("Error fetching agreement data:", error);
         setAgreements([]);
       } else {
-        setAgreements(data);
+        // Sort agreements alphabetically by university name
+        const sortedAgreements = [...data].sort((a, b) => 
+          a.university.localeCompare(b.university)
+        );
+        setAgreements(sortedAgreements);
       }
       setLoading(false);
     };
@@ -101,7 +105,7 @@ export default function AgreementsPage() {
     }
   };
 
-  const filteredAgreements = agreements.filter(item => {
+  const filteredAgreements = [...agreements].filter(item => {
     const matchesQuery = item.university.toLowerCase().includes(searchQuery.toLowerCase()) ||
       item.agreement_type.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesType = !filterType || item.agreement_type === filterType;
@@ -126,7 +130,7 @@ export default function AgreementsPage() {
   );
   
 
-  return (
+   return (
     <Sidebar role="admin" email={userEmail}>
       <div className="relative text-black p-6 bg-white rounded-2xl shadow-lg">
         <div className="flex justify-between items-center mb-6">
@@ -216,6 +220,7 @@ export default function AgreementsPage() {
           </div>
         )}
       </div>
+
 
       {/* Modal */}
 {selectedAgreement && (

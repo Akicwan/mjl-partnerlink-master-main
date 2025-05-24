@@ -10,12 +10,19 @@ export default function PartnerNotification() {
   const [selectedTab, setSelectedTab] = useState('unread');
   const [email, setEmail] = useState('');
   const [university, setUniversity] = useState('');
+  const [loading, setLoading] = useState(true);
 
   // Get logged-in user info (email + university)
   useEffect(() => {
     async function getUserInfo() {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
+      try {
+        const { data: { user }, error: authError } = await supabase.auth.getUser();
+        
+        if (authError || !user) {
+          setLoading(false);
+          return;
+        }
+
         setEmail(user.email);
 
         const { data, error } = await supabase
@@ -24,9 +31,11 @@ export default function PartnerNotification() {
           .eq('email', user.email)
           .single();
 
-        if (data && !error) {
+        if (data) {
           setUniversity(data.university);
         }
+      } catch (err) {
+        setLoading(false);
       }
     }
 
@@ -47,71 +56,79 @@ export default function PartnerNotification() {
     async function fetchNotifications() {
       if (!university) return;
 
-      const { data: agreements, error } = await supabase
-        .from('agreements_2')
-        .select('id, end_date, agreement_type, abbreviation, university')
-        .eq('university', university);
+      try {
+        setLoading(true);
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
 
-      if (error || !agreements) {
-        console.error('Fetch error:', error);
-        return;
-      }
+        const { data: agreements, error } = await supabase
+          .from('agreements_2')
+          .select('id, end_date, agreement_type, abbreviation, university')
+          .eq('university', university)
+          .order('end_date', { ascending: true });
 
-      const today = new Date();
-      const notes = [];
+        if (error) {
+          setLoading(false);
+          return;
+        }
 
-      for (const ag of agreements) {
-        if (!ag.end_date) continue;
+        const notes = [];
+        const now = new Date();
 
-        const endDate = new Date(ag.end_date);
-        const formattedDate = endDate.toLocaleDateString('en-MY', {
-          year: 'numeric',
-          month: 'long',
-          day: 'numeric',
-        });
+        for (const ag of agreements) {
+          if (!ag.end_date) continue;
 
-        const oneMonthAhead = new Date(today);
-        oneMonthAhead.setMonth(today.getMonth() + 1);
+          const endDate = new Date(ag.end_date);
+          endDate.setHours(0, 0, 0, 0);
+          
+          const timeDiff = endDate.getTime() - now.getTime();
+          const daysDiff = Math.ceil(timeDiff / (1000 * 60 * 60 * 24));
 
-        const sixMonthsAhead = new Date(today);
-        sixMonthsAhead.setMonth(today.getMonth() + 6);
+          // Skip expired agreements
+          if (daysDiff <= 0) continue;
 
-        const base = {
-          id: ag.id,
-          agreement_type: ag.agreement_type,
-          abbreviation: ag.abbreviation,
-          university: ag.university,
-          end_date: formattedDate,
-        };
-
-        if (endDate < today) {
-          notes.push({
-            ...base,
-            type: 'expired',
-            title: `${ag.abbreviation} ${ag.agreement_type} agreement has expired`,
-            message: `- ${ag.university} ${ag.agreement_type} agreement expired on ${formattedDate}`,
+          const formattedDate = endDate.toLocaleDateString('en-MY', {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric',
           });
-        } else {
-          if (endDate <= sixMonthsAhead) {
-            notes.push({
-              ...base,
-              type: '6-month',
-              title: `${ag.abbreviation} ${ag.agreement_type} agreement is ending in 6 months`,
-              message: `- ${ag.university} ${ag.agreement_type} agreement is ending on ${formattedDate}`,
-            });
-          }
-          if (endDate <= oneMonthAhead) {
+
+          const base = {
+            id: ag.id,
+            agreement_type: ag.agreement_type,
+            abbreviation: ag.abbreviation,
+            university: ag.university,
+            end_date: formattedDate,
+            raw_end_date: endDate,
+            days_remaining: daysDiff
+          };
+
+          if (daysDiff <= 30) {
             notes.push({
               ...base,
               type: '1-month',
-              title: `${ag.abbreviation} ${ag.agreement_type} agreement is ending in 1 month`,
-              message: `- ${ag.university} ${ag.agreement_type} agreement is ending on ${formattedDate}`,
+              title: `${ag.abbreviation} Agreement Expiring Soon`,
+              message: `${ag.university} ${ag.agreement_type} agreement expires on ${formattedDate}`,
+              priority: 1
+            });
+          } else if (daysDiff <= 180) {
+            notes.push({
+              ...base,
+              type: '6-month',
+              title: `${ag.abbreviation} Agreement Expiring`,
+              message: `${ag.university} ${ag.agreement_type} agreement expires on ${formattedDate}`,
+              priority: 2
             });
           }
         }
-      }
 
-      setNotifications(notes);
+        // Sort by days remaining (soonest first)
+        const sortedNotes = notes.sort((a, b) => a.days_remaining - b.days_remaining);
+        setNotifications(sortedNotes);
+        setLoading(false);
+      } catch (err) {
+        setLoading(false);
+      }
     }
 
     fetchNotifications();
@@ -158,13 +175,16 @@ export default function PartnerNotification() {
           </button>
         </div>
 
-        {visibleNotifications.length === 0 ? (
+        {loading ? (
+          <p>Loading notifications...</p>
+        ) : visibleNotifications.length === 0 ? (
           <p>No {selectedTab} notifications.</p>
         ) : (
           <ul className="space-y-3">
             {visibleNotifications.map((note) => {
               const readKey = note.id + '-' + note.type;
               const isRead = readIds.has(readKey);
+              const isUrgent = note.days_remaining <= 30;
 
               return (
                 <li
@@ -181,8 +201,16 @@ export default function PartnerNotification() {
                       className="mr-3 mt-1"
                     />
                     <div>
-                      <strong className={isRead ? 'font-normal' : 'font-semibold'}>{note.title}</strong>
+                      <strong className={isRead ? 'font-normal' : 'font-semibold'}>
+                        {note.title}
+                      </strong>
                       <p className="mt-1">{note.message}</p>
+                      <p className="text-sm mt-1">
+                        Ends: {note.end_date} • 
+                        <span className={`ml-1 ${isUrgent ? 'font-bold text-red-600' : 'text-gray-500'}`}>
+                          {note.days_remaining} days remaining
+                        </span>
+                      </p>
                     </div>
                   </div>
                 </li>

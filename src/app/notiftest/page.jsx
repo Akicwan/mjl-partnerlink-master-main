@@ -11,8 +11,8 @@ export default function NotifTest() {
   const [email, setEmail] = useState('');
   const [role, setRole] = useState('');
   const [hasSentEmails, setHasSentEmails] = useState(false);
+  const [loading, setLoading] = useState(true);
 
-  // Helper to send email via Supabase Edge Function
   async function sendEmailNotification(to, subject, html) {
     try {
       const { data, error } = await supabase.functions.invoke('send-email', {
@@ -29,13 +29,16 @@ export default function NotifTest() {
     }
   }
 
-  // Fetch user info (email + role)
   useEffect(() => {
     async function getUserInfo() {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      if (user) {
+      try {
+        const { data: { user }, error: authError } = await supabase.auth.getUser();
+        
+        if (authError || !user) {
+          setLoading(false);
+          return;
+        }
+
         setEmail(user.email);
 
         const { data, error } = await supabase
@@ -44,121 +47,112 @@ export default function NotifTest() {
           .eq('email', user.email)
           .single();
 
-        if (data && !error) {
+        if (data) {
           setRole(data.role);
         }
+      } catch (err) {
+        setLoading(false);
       }
     }
 
     getUserInfo();
   }, []);
 
-  // Load read status from localStorage using email
   useEffect(() => {
-    if (!email) return; // Don't run until email is fetched
+    if (!email) return;
+
     const storedRead = localStorage.getItem(`readNotifications-${email}`);
     if (storedRead) {
       setReadIds(new Set(JSON.parse(storedRead)));
-    } else {
-      setReadIds(new Set());
     }
   }, [email]);
 
-  // Fetch notifications and send emails only after email and readIds loaded
   useEffect(() => {
-    if (!email) return;
-    // Wait until readIds loaded from localStorage
-    // localStorage returns null if no key, so skip waiting if no stored value
-    if (
-      readIds.size === 0 &&
-      localStorage.getItem(`readNotifications-${email}`) !== null
-    ) {
-      return;
-    }
-
-    if (hasSentEmails) return; // prevent duplicate sends in this session
+    if (!email || hasSentEmails) return;
 
     async function fetchNotifications() {
-      const { data: agreements, error } = await supabase
-        .from('agreements_2')
-        .select('id, end_date, agreement_type, abbreviation, university');
+      try {
+        setLoading(true);
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        
+        const { data: agreements, error } = await supabase
+          .from('agreements_2')
+          .select('id, end_date, agreement_type, abbreviation, university')
+          .order('end_date', { ascending: true });
 
-      if (error || !agreements) {
-        console.error('Fetch error:', error);
-        return;
-      }
+        if (error) {
+          setLoading(false);
+          return;
+        }
+        
+        const notes = [];
+        const now = new Date();
 
-      const today = new Date();
-      const notes = [];
+        agreements.forEach(ag => {
+          if (!ag.end_date) return;
 
-      for (const ag of agreements) {
-        if (!ag.end_date) continue;
+          const endDate = new Date(ag.end_date);
+          endDate.setHours(0, 0, 0, 0);
+          
+          const timeDiff = endDate.getTime() - now.getTime();
+          const daysDiff = Math.ceil(timeDiff / (1000 * 60 * 60 * 24));
 
-        const endDate = new Date(ag.end_date);
-        const formattedDate = endDate.toLocaleDateString('en-MY', {
-          year: 'numeric',
-          month: 'long',
-          day: 'numeric',
-        });
+          // 跳过已过期的协议
+          if (daysDiff <= 0) return;
 
-        const oneMonthAhead = new Date(today);
-        oneMonthAhead.setMonth(today.getMonth() + 1);
+          const base = {
+            id: ag.id,
+            agreement_type: ag.agreement_type,
+            abbreviation: ag.abbreviation,
+            university: ag.university,
+            end_date: endDate.toLocaleDateString('en-MY'),
+            raw_end_date: endDate,
+            days_remaining: daysDiff
+          };
 
-        const sixMonthsAhead = new Date(today);
-        sixMonthsAhead.setMonth(today.getMonth() + 6);
-
-        const base = {
-          id: ag.id,
-          agreement_type: ag.agreement_type,
-          abbreviation: ag.abbreviation,
-          university: ag.university,
-          end_date: formattedDate,
-        };
-
-        if (endDate < today) {
-          notes.push({
-            ...base,
-            type: 'expired',
-            title: `${ag.abbreviation} ${ag.agreement_type} agreement has expired`,
-            message: `- ${ag.university} ${ag.agreement_type} agreement expired on ${formattedDate}`,
-          });
-        } else {
-          if (endDate <= sixMonthsAhead) {
-            notes.push({
-              ...base,
-              type: '6-month',
-              title: `${ag.abbreviation} ${ag.agreement_type} agreement is ending in 6 months`,
-              message: `- ${ag.university} ${ag.agreement_type} agreement is ending on ${formattedDate}`,
-            });
-          }
-          if (endDate <= oneMonthAhead) {
+          if (daysDiff <= 30) {
             notes.push({
               ...base,
               type: '1-month',
-              title: `${ag.abbreviation} ${ag.agreement_type} agreement is ending in 1 month`,
-              message: `- ${ag.university} ${ag.agreement_type} agreement is ending on ${formattedDate}`,
+              title: `${ag.abbreviation} Agreement Expiring Soon`,
+              message: `${ag.university} ${ag.agreement_type} agreement expires on ${base.end_date}`,
+              priority: 1
+            });
+          } else if (daysDiff <= 180) {
+            notes.push({
+              ...base,
+              type: '6-month',
+              title: `${ag.abbreviation} Agreement Expiring`,
+              message: `${ag.university} ${ag.agreement_type} agreement expires on ${base.end_date}`,
+              priority: 2
             });
           }
+        });
+
+        // Sort by days remaining (soonest first)
+        const sortedNotes = notes.sort((a, b) => a.days_remaining - b.days_remaining);
+
+        setNotifications(sortedNotes);
+        setLoading(false);
+
+        // Send emails for unread notifications
+        for (const note of sortedNotes) {
+          const key = note.id + '-' + note.type;
+          if (!readIds.has(key)) {
+            await sendEmailNotification(email, note.title, note.message);
+          }
         }
+
+        setHasSentEmails(true);
+      } catch (err) {
+        setLoading(false);
       }
-
-      setNotifications(notes);
-
-      // Send emails only for unread notifications
-      for (const note of notes) {
-        const key = note.id + '-' + note.type;
-        if (!readIds.has(key)) {
-          await sendEmailNotification(email, note.title, `<p>${note.message}</p>`);
-        }
-      }
-
-      setHasSentEmails(true); // mark emails as sent for this session
     }
 
     fetchNotifications();
   }, [email, readIds, hasSentEmails]);
 
-  // Update read/unread checkbox and save to localStorage
   const updateReadStatus = (idTypeKey, isNowRead) => {
     const updated = new Set(readIds);
     if (isNowRead) {
@@ -170,8 +164,7 @@ export default function NotifTest() {
     localStorage.setItem(`readNotifications-${email}`, JSON.stringify([...updated]));
   };
 
-  // Filter notifications by tab
-  const visibleNotifications = notifications.filter((n) => {
+  const visibleNotifications = notifications.filter(n => {
     const key = n.id + '-' + n.type;
     return selectedTab === 'unread' ? !readIds.has(key) : readIds.has(key);
   });
@@ -181,7 +174,6 @@ export default function NotifTest() {
       <div className="p-4 max-w-4xl mx-auto font-sans">
         <h1 className="text-2xl font-bold mb-4">Notification Center</h1>
 
-        {/* Tab selector */}
         <div className="flex mb-4">
           <button
             onClick={() => setSelectedTab('unread')}
@@ -201,13 +193,16 @@ export default function NotifTest() {
           </button>
         </div>
 
-        {visibleNotifications.length === 0 ? (
+        {loading ? (
+          <p>Loading notifications...</p>
+        ) : visibleNotifications.length === 0 ? (
           <p>No {selectedTab} notifications.</p>
         ) : (
           <ul className="space-y-3">
-            {visibleNotifications.map((note) => {
+            {visibleNotifications.map(note => {
               const readKey = note.id + '-' + note.type;
               const isRead = readIds.has(readKey);
+              const isUrgent = note.days_remaining <= 30;
 
               return (
                 <li
@@ -228,6 +223,12 @@ export default function NotifTest() {
                         {note.title}
                       </strong>
                       <p className="mt-1">{note.message}</p>
+                      <p className="text-sm mt-1">
+                        Ends: {note.end_date} • 
+                        <span className={`ml-1 ${isUrgent ? 'font-bold text-red-600' : 'text-gray-500'}`}>
+                          {note.days_remaining} days remaining
+                        </span>
+                      </p>
                     </div>
                   </div>
                 </li>
