@@ -40,7 +40,14 @@ export default function UniversityPage() {
       if (!grouped[university][agreement_type]) grouped[university][agreement_type] = [];
       grouped[university][agreement_type].push(agreement);
     });
-    setGroupedData(grouped);
+    
+    // Sort universities alphabetically
+    const sortedGrouped = {};
+    Object.keys(grouped).sort().forEach(key => {
+      sortedGrouped[key] = grouped[key];
+    });
+    
+    setGroupedData(sortedGrouped);
     setLoading(false);
   };
 
@@ -115,7 +122,7 @@ export default function UniversityPage() {
 
   if (!userEmail || loading) return <div className="p-6">Loading...</div>;
 
-  return (
+   return (
     <Sidebar role="admin" email={userEmail}>
       <div className="text-black p-6 bg-white rounded-2xl shadow-lg">
         <div className="flex justify-between items-center mb-6">

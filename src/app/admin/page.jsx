@@ -26,15 +26,40 @@ import {
   TableCell,
 } from '@/components/ui/table';
 
+const CustomizedTick = ({ x, y, payload }) => {
+  const lines = payload.value.split('\n');
+  return (
+    <g transform={`translate(${x},${y})`}>
+      {lines.map((line, index) => (
+        <text
+          key={index}
+          x={0}
+          y={index * 12}
+          dy={16}
+          textAnchor="middle"
+          fill="#666"
+          fontSize={11}
+        >
+          {line}
+        </text>
+      ))}
+    </g>
+  );
+};
+
+const wrapLabel = (label) => {
+  return label.length > 25
+    ? label.replace(/\s(.{5,})$/, "\n$1")
+    : label;
+};
+
 export default function AdminDashboard() {
   const [userEmail, setUserEmail] = useState(null);
   const [agreementData, setAgreementData] = useState([]);
   const [recentAgreements, setRecentAgreements] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const router = useRouter();
-
-  const totalAgreements = agreementData.reduce((sum, item) => sum + item.agreements, 0);
-  const totalActivities = agreementData.reduce((sum, item) => sum + item.activities, 0);
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -54,52 +79,92 @@ export default function AdminDashboard() {
   useEffect(() => {
     const fetchData = async () => {
       setLoading(true);
+      setError(null);
 
-      // Fetch agreement counts grouped by university
-      const { data: allData, error: allError } = await supabase
-        .from('agreements_2')
-        .select('university');
+      try {
+        // 1. Fetch agreements data
+        const { data: allData, error: allError } = await supabase
+          .from('agreements_2')
+          .select('id, university');
 
-      if (allError) {
-        console.error("Error fetching agreement data:", allError);
-        setAgreementData([]);
-      } else {
-        const grouped = allData.reduce((acc, item) => {
-          const uni = item.university || 'Unknown';
-          acc[uni] = (acc[uni] || 0) + 1;
-          return acc;
-        }, {});
+        if (allError) {
+          throw new Error(`Agreements fetch error: ${allError.message}`);
+        }
 
-        const formatted = Object.entries(grouped).map(([university, agreements]) => ({
-          university,
-          agreements,
-          activities: Math.floor(Math.random() * 10) + 1, // Random placeholder
+        // 2. Initialize university map with agreements count
+        const universityMap = new Map();
+        allData.forEach(agreement => {
+          const uni = agreement.university || 'Unknown';
+          if (!universityMap.has(uni)) {
+            universityMap.set(uni, {
+              agreements: 0,
+              activities: 0
+            });
+          }
+          universityMap.get(uni).agreements++;
+        });
+
+        // 3. Try to fetch activities if table exists
+        try {
+          const { data: activities, error: activitiesError } = await supabase
+            .from('activities')
+            .select('agreement_id');
+
+          if (!activitiesError && activities) {
+            // Count activities per university
+            activities.forEach(activity => {
+              const agreement = allData.find(a => a.id === activity.agreement_id);
+              if (agreement) {
+                const uni = agreement.university || 'Unknown';
+                if (universityMap.has(uni)) {
+                  universityMap.get(uni).activities++;
+                }
+              }
+            });
+          }
+        } catch (activitiesErr) {
+          console.warn("Activities table not found or error fetching activities. Using zero values.");
+          // If activities table doesn't exist, just continue with zero values
+        }
+
+        // 4. Convert to array format for chart
+        const formatted = Array.from(universityMap.entries()).map(([university, counts]) => ({
+          university: wrapLabel(university),
+          agreements: counts.agreements,
+          activities: counts.activities
         }));
 
         setAgreementData(formatted);
-      }
 
-      // Fetch 4 most recent agreements
-      const { data: recent, error: recentError } = await supabase
-        .from('agreements_2')
-        .select('university, agreement_type, start_date, end_date')
-        
-        .limit(4);
+        // 5. Fetch recent agreements
+        const { data: recent, error: recentError } = await supabase
+          .from('agreements_2')
+          .select('university, agreement_type, start_date, end_date')
+          .order('start_date', { ascending: false })
+          .limit(4);
 
-      if (recentError) {
-        console.error("Error fetching recent agreements:", JSON.stringify(recentError, null, 2));
+        if (!recentError) {
+          setRecentAgreements(recent);
+        }
+
+      } catch (err) {
+        console.error("Data fetch error:", err);
+        setError(err.message);
+        setAgreementData([]);
         setRecentAgreements([]);
-      } else {
-        setRecentAgreements(recent);
+      } finally {
+        setLoading(false);
       }
-
-      setLoading(false);
     };
 
     if (userEmail) fetchData();
   }, [userEmail]);
 
+  const totalAgreements = agreementData.reduce((sum, item) => sum + item.agreements, 0);
+  const totalActivities = agreementData.reduce((sum, item) => sum + item.activities, 0);
+
   if (!userEmail || loading) return <p className="p-6">Loading...</p>;
+  if (error) return <p className="p-6 text-red-500">Error: {error}</p>;
 
   return (
     <Sidebar role="admin" email={userEmail}>
@@ -112,30 +177,51 @@ export default function AdminDashboard() {
           <div className="flex flex-col gap-8">
             {/* Chart + Summary */}
             <div className="flex flex-col lg:flex-row gap-6">
-              <div className="w-full lg:w-2/3 h-[400px] bg-white p-4 rounded-2xl shadow-md border border-gray-100">
+              <div className="w-full lg:w-5/6 h-[400px] bg-white p-4 rounded-2xl shadow-md border border-gray-100">
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart
                     data={agreementData}
                     margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
                   >
                     <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="university" tick={{ fontSize: 12 }} />
+                    <XAxis
+                      dataKey="university"
+                      interval={0}
+                      height={60}
+                      tick={<CustomizedTick />}
+                    />
                     <YAxis />
-                    <Tooltip />
+                    <Tooltip 
+                      formatter={(value, name) => [
+                        value, 
+                        name === 'agreements' ? 'Agreements' : 'Activities'
+                      ]}
+                    />
                     <Legend />
-                    <Bar dataKey="agreements" fill="#a0c4ff" radius={[8, 8, 0, 0]} name="Agreements" />
-                    <Bar dataKey="activities" fill="#ffd6a5" radius={[8, 8, 0, 0]} name="Activities" />
+                    <Bar 
+                      dataKey="agreements" 
+                      fill="#a0c4ff" 
+                      radius={[8, 8, 0, 0]} 
+                      name="Agreements" 
+                    />
+                    <Bar 
+                      dataKey="activities" 
+                      fill="#ffd6a5" 
+                      radius={[8, 8, 0, 0]} 
+                      name="Activities" 
+                    />
                   </BarChart>
                 </ResponsiveContainer>
               </div>
 
-              <div className="w-full lg:w-1/3 flex flex-col gap-4">
+              <div className="w-full lg:w-1/6 flex flex-col gap-4">
                 <Card>
                   <CardHeader>
                     <CardTitle className="text-[#1F2163]">Total Agreements</CardTitle>
                   </CardHeader>
                   <CardContent>
                     <p className="text-3xl font-bold text-[#3A86FF]">{totalAgreements}</p>
+                    <p className="text-sm text-gray-500 mt-1">{agreementData.length} universities</p>
                   </CardContent>
                 </Card>
                 <Card>
@@ -144,6 +230,7 @@ export default function AdminDashboard() {
                   </CardHeader>
                   <CardContent>
                     <p className="text-3xl font-bold text-[#FF9F1C]">{totalActivities}</p>
+                    <p className="text-sm text-gray-500 mt-1">Across all agreements</p>
                   </CardContent>
                 </Card>
               </div>
@@ -185,9 +272,6 @@ export default function AdminDashboard() {
                 </TableBody>
               </Table>
             </div>
-
-        
-          
           </div>
         )}
       </div>
