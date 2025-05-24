@@ -11,16 +11,17 @@ export default function AgreementForm() {
   const router = useRouter();
   const [contacts, setContacts] = useState([{ name: '', email: '' }]);
   const [others, setOthers] = useState([{ fieldName: '', value: '' }]);
+  const [coTeachings, setCoTeachings] = useState([{ name: '', year: '' }]);
   const [form, setForm] = useState({
     university: '', abbreviation: '', juc_member: null,
     agreement_type: '', academic_collab: false, research_collab: false,
     start_date: '', end_date: '', i_kohza: '', pic_mjiit: '',
-    jd_dd: '', joint_lab: '', co_teaching: '', staff_mobility: '', student_mobility: '', joint_supervision: '',
+    jd_dd: '', joint_lab: '', staff_mobility: '', student_mobility: '', joint_supervision: '',
     joint_research: '', joint_publication: ''
   });
   const [message, setMessage] = useState('');
 
- useEffect(() => {
+  useEffect(() => {
     const fetchUser = async () => {
       const { data, error } = await supabase.auth.getUser();
 
@@ -34,7 +35,6 @@ export default function AgreementForm() {
 
     fetchUser();
   }, [router]);
- 
 
   const agreementOptions = [
     'MOA', 'MOA Regional Conference Program  Agreement', 'MOU', 'Cross Appointment',
@@ -51,28 +51,38 @@ export default function AgreementForm() {
   const toggleCheckbox = field => setForm(prev => ({ ...prev, [field]: !prev[field] }));
 
   const addContact = () => setContacts(prev => [...prev, { name: '', email: '' }]);
-  const updateContact = (i, f, v) => setContacts(prev => prev.map((c, idx) => idx===i?{...c,[f]:v}:c));
-  const removeContact = i => setContacts(prev => prev.filter((_,idx)=>idx!==i));
+  const updateContact = (i, f, v) => setContacts(prev => prev.map((c, idx) => idx === i ? { ...c, [f]: v } : c));
+  const removeContact = i => setContacts(prev => prev.filter((_, idx) => idx !== i));
 
-  const addOther = () => setOthers(prev => [...prev, { fieldName:'', value:'' }]);
-  const updateOther = (i,f,v) => setOthers(prev => prev.map((o,idx)=>idx===i?{...o,[f]:v}:o));
-  const removeOther = i => setOthers(prev => prev.filter((_,idx)=>idx!==i));
+  const addOther = () => setOthers(prev => [...prev, { fieldName: '', value: '' }]);
+  const updateOther = (i, f, v) => setOthers(prev => prev.map((o, idx) => idx === i ? { ...o, [f]: v } : o));
+  const removeOther = i => setOthers(prev => prev.filter((_, idx) => idx !== i));
+
+  const addCoTeaching = () => setCoTeachings(prev => [...prev, { name: '', year: '' }]);
+  const updateCoTeaching = (i, f, v) => setCoTeachings(prev => prev.map((c, idx) => idx === i ? { ...c, [f]: v } : c));
+  const removeCoTeaching = i => setCoTeachings(prev => prev.filter((_, idx) => idx !== i));
 
   const handleSubmit = async e => {
     e.preventDefault();
-    const payload = { ...form, contacts, others };
-    const { error } = await supabase.from('agreements_2').insert([payload]);
+    const payload = {
+      ...form,
+      contacts,
+      others,
+      co_teaching: JSON.stringify(coTeachings) // Store as string for text column
+    };
+
+    const { data, error } = await supabase.from('agreements_2').insert([payload]).select();
+
     if (error) {
       console.error(error);
       setMessage('Failed to save agreement.');
-      console.log("Failed so save agreement")
     } else {
       setMessage('Agreement saved successfully!');
-      console.log("Agreement saved successfully.")
-      setTimeout(() => { window.location.reload(); }, 3000);
-
+      setTimeout(() => window.location.reload(), 3000);
     }
   };
+
+
 
   return (
     <Sidebar role="admin" email={userEmail}>
@@ -134,11 +144,10 @@ export default function AgreementForm() {
 
           {form.academic_collab && (
             <div className="grid grid-cols-2 gap-4">
-              {['jd_dd','joint_lab','co_teaching','staff_mobility','student_mobility','joint_supervision'].map(f => {
+              {['jd_dd','joint_lab','staff_mobility','student_mobility','joint_supervision'].map(f => {
   const labelMap = {
     jd_dd: 'Join degree / Double degree',
     joint_lab: 'Joint lab',
-    co_teaching: 'Co teaching',
     staff_mobility: 'Staff mobility',
     student_mobility: 'Student mobility',
     joint_supervision: 'Joint supervision'
@@ -150,7 +159,22 @@ export default function AgreementForm() {
     </div>
   );
 })}
-
+</div>
+)}
+{form.academic_collab && (
+            <div className="space-y-2">
+              <label className="block font-medium text-black">Co-Teaching</label>
+              <AnimatePresence>
+                {coTeachings.map((c, i) => (
+                  <motion.div key={i} className="grid grid-cols-3 gap-4 items-center"
+                    initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 10 }} transition={{ duration: 0.2 }}>
+                    <textarea placeholder="Name" required value={c.name} onChange={e => updateCoTeaching(i, 'name', e.target.value)} className={inputClasses} rows={1} />
+                    <textarea placeholder="Year" required value={c.year} onChange={e => updateCoTeaching(i, 'year', e.target.value)} className={inputClasses} rows={1} />
+                    {coTeachings.length > 1 && <button type="button" onClick={() => removeCoTeaching(i)} className={deleteButtonClasses}>×</button>}
+                  </motion.div>
+                ))}
+              </AnimatePresence>
+              <button type="button" onClick={addCoTeaching} className={buttonClasses}>+ Add Co-Teaching</button>
             </div>
           )}
 
