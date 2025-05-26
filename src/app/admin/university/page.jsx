@@ -1,5 +1,3 @@
-// Added undo feature using a temporary state to store the last deleted agreement
-
 'use client';
 
 import { useEffect, useState } from 'react';
@@ -106,15 +104,42 @@ export default function UniversityPage() {
     setSaving(false);
   };
 
-  const renderAttribute = (label, value) => {
-    if (value === null || value === undefined || value === '') return null;
-    const displayValue = typeof value === 'boolean' ? (value ? 'Yes' : 'No') : value;
-    return (
-      <li key={label} className="text-sm text-gray-700 ml-4">
-        <strong>{label}:</strong> {displayValue}
-      </li>
-    );
-  };
+ const renderAttribute = (label, value) => {
+  if (value === null || value === undefined || value === '') return null;
+
+  let displayValue;
+
+  // Special handling for co_teaching JSON string
+  if (label === 'Co-Teaching') {
+    try {
+      const parsed = JSON.parse(value);
+      if (Array.isArray(parsed)) {
+        displayValue = (
+          <ul className="list-disc ml-4">
+            {parsed.map((entry, index) => (
+              <li key={index}>
+                {entry.name} ({entry.year})
+              </li>
+            ))}
+          </ul>
+        );
+      } else {
+        displayValue = value;
+      }
+    } catch (e) {
+      displayValue = value; // Fallback in case of JSON parse error
+    }
+  } else {
+    displayValue = typeof value === 'boolean' ? (value ? 'Yes' : 'No') : value;
+  }
+
+  return (
+    <li key={label} className="text-sm text-gray-700 ml-4">
+      <strong>{label}:</strong> {displayValue}
+    </li>
+  );
+};
+
 
   const filteredUniversities = Object.entries(groupedData).filter(
     ([university]) => university.toLowerCase().includes(searchTerm.toLowerCase())
@@ -182,7 +207,7 @@ export default function UniversityPage() {
                             {renderAttribute('End Date', agreement.end_date)}
                             {renderAttribute('i-Kohza', agreement.i_kohza)}
                             {renderAttribute('PIC MJIIT', agreement.pic_mjiit)}
-                            {renderAttribute('JD/DD', agreement.jd_dd)}
+                            {renderAttribute('Join Degree / Double Degree', agreement.jd_dd)}
                             {renderAttribute('Joint Lab', agreement.joint_lab)}
                             {renderAttribute('Co-Teaching', agreement.co_teaching)}
                             {renderAttribute('Staff Mobility', agreement.staff_mobility)}
@@ -205,7 +230,7 @@ export default function UniversityPage() {
                             </button>
                           </div>
                         </div>
-                      ))}
+                      ))} 
                     </div>
                   )}
                 </div>
@@ -221,21 +246,138 @@ export default function UniversityPage() {
           <div className="bg-white p-6 rounded-xl shadow-xl max-w-2xl w-full">
             <h2 className="text-xl font-semibold mb-4">Edit Agreement</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-[60vh] overflow-y-auto">
-              {Object.entries(editAgreement).map(([key, value]) => {
-                if (key === 'id') return null;
-                return (
-                  <div key={key}>
-                    <label className="text-sm text-gray-700">{key}</label>
-                    <input
-                      type="text"
-                      name={key}
-                      value={value ?? ''}
-                      onChange={handleModalChange}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md"
-                    />
-                  </div>
-                );
-              })}
+
+{Object.entries(editAgreement).map(([key, value]) => {
+  if (key === 'id') return null;
+
+  const isAcademicField = ['jd_dd', 'joint_lab', 'staff_mobility', 'student_mobility', 'joint_supervision', 'co_teaching'].includes(key);
+  const isResearchField = ['joint_research', 'joint_publication'].includes(key);
+
+  if ((isAcademicField && !editAgreement.academic_collab) || (isResearchField && !editAgreement.research_collab)) {
+    return null;
+  }
+
+  if (key === 'co_teaching') {
+    let coTeachingArray = [];
+
+    try {
+      coTeachingArray = Array.isArray(value) ? value : JSON.parse(value) || [];
+    } catch {
+      coTeachingArray = [];
+    }
+
+    const handleCoTeachingChange = (index, field, fieldValue) => {
+      const updated = [...coTeachingArray];
+      updated[index] = { ...updated[index], [field]: fieldValue };
+      setEditAgreement((prev) => ({
+        ...prev,
+        co_teaching: updated
+      }));
+    };
+
+    const handleAddCoTeaching = () => {
+      setEditAgreement((prev) => ({
+        ...prev,
+        co_teaching: [...coTeachingArray, { name: '', year: '' }]
+      }));
+    };
+
+    const handleRemoveCoTeaching = (index) => {
+      const updated = coTeachingArray.filter((_, i) => i !== index);
+      setEditAgreement((prev) => ({
+        ...prev,
+        co_teaching: updated
+      }));
+    };
+
+    return (
+      <div key={key} className="col-span-full">
+        <label className="text-sm text-gray-700 block mb-1">Co-Teaching</label>
+        {coTeachingArray.map((item, index) => (
+          <div key={index} className="flex gap-2 items-center mb-2">
+            <input
+              type="text"
+              placeholder="Name"
+              value={item.name || ''}
+              onChange={(e) => handleCoTeachingChange(index, 'name', e.target.value)}
+              className="flex-1 px-3 py-2 border border-gray-300 rounded-md"
+            />
+            <input
+              type="text"
+              placeholder="Year"
+              value={item.year || ''}
+              onChange={(e) => handleCoTeachingChange(index, 'year', e.target.value)}
+              className="w-[100px] px-3 py-2 border border-gray-300 rounded-md"
+            />
+            <button
+              type="button"
+              onClick={() => handleRemoveCoTeaching(index)}
+              className="text-red-500 hover:text-red-700"
+            >
+              ✕
+            </button>
+          </div>
+        ))}
+        <button
+          type="button"
+          onClick={handleAddCoTeaching}
+          className="mt-2 px-3 py-1 bg-blue-500 text-white text-sm rounded hover:bg-blue-600"
+        >
+          Add Co-Teaching
+        </button>
+      </div>
+    );
+  }
+
+  if (key === 'juc_member' || key === 'academic_collab' || key === 'research_collab' || key === 'jd_dd') {
+    const labelMap = {
+      juc_member: 'JUC Member',
+      academic_collab: 'Academic Collaboration',
+      research_collab: 'Research Collaboration',
+      jd_dd: 'Join Degree / Double Degree'
+    };
+
+    return (
+      <div key={key} className="col-span-full">
+        <label className="text-sm text-gray-700 block mb-1">{labelMap[key]}</label>
+        <div className="flex gap-2">
+          <button
+            type="button"
+            onClick={() => setEditAgreement((prev) => ({ ...prev, [key]: true }))}
+            className={`px-4 py-2 rounded ${
+              value === true ? 'bg-green-600 text-white' : 'bg-gray-200 text-gray-800'
+            }`}
+          >
+            Yes
+          </button>
+          <button
+            type="button"
+            onClick={() => setEditAgreement((prev) => ({ ...prev, [key]: false }))}
+            className={`px-4 py-2 rounded ${
+              value === false ? 'bg-red-600 text-white' : 'bg-gray-200 text-gray-800'
+            }`}
+          >
+            No
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div key={key} className="col-span-full">
+      <label className="text-sm text-gray-700 block mb-1">{key}</label>
+      <textarea
+        name={key}
+        value={value ?? ''}
+        onChange={handleModalChange}
+        className="w-full px-3 py-2 border border-gray-300 rounded-md resize-y min-h-[80px]"
+      />
+    </div>
+  );
+})}
+
+
             </div>
             <div className="flex justify-end mt-6 space-x-2">
               <button

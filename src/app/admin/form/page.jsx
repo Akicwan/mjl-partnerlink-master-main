@@ -146,7 +146,7 @@ export default function AgreementForm() {
             <div className="grid grid-cols-2 gap-4">
               {['jd_dd','joint_lab','staff_mobility','student_mobility','joint_supervision'].map(f => {
   const labelMap = {
-    jd_dd: 'Join degree / Double degree',
+    jd_dd: 'Join Degree / Double Degree',
     joint_lab: 'Joint lab',
     staff_mobility: 'Staff mobility',
     student_mobility: 'Student mobility',
