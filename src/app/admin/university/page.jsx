@@ -109,14 +109,61 @@ export default function UniversityPage() {
 
   let displayValue;
 
-  // Special handling for co_teaching JSON string
-  if (label === 'Co-Teaching') {
-  if (Array.isArray(value)) {
+  // Generic handler for JSON arrays
+  const renderJsonList = (arr, fields) => (
+    <ul className="list-disc ml-4">
+      {arr.map((entry, index) => (
+        <li key={index}>
+          {fields.map((field, i) => (
+            <span key={i}>
+              {entry[field] ? `${entry[field]}${i < fields.length - 1 ? ', ' : ''}` : ''}
+            </span>
+          ))}
+        </li>
+      ))}
+    </ul>
+  );
+
+  if (label === 'Co-Teaching' || label === 'Staff Mobility' || label === 'Joint Supervision' || label === 'Joint Research') {
+    if (Array.isArray(value)) {
+      const fields = ['name', 'year'];
+      displayValue = renderJsonList(value, fields);
+    } else {
+      displayValue = <span className="italic text-gray-500">No data</span>;
+    }
+  } else if (label === 'Student Mobility') {
+    if (Array.isArray(value)) {
+      const fields = ['name', 'year', 'number_of_students'];
+      displayValue = renderJsonList(value, fields);
+    } else {
+      displayValue = <span className="italic text-gray-500">No data</span>;
+    }
+  }   else if (label === 'Joint Publication') {
+  if (
+    !Array.isArray(value) ||
+    value.length === 0 ||
+    value.every(entry =>
+      !entry.year?.trim() && !entry.author?.trim() && !entry.publisher?.trim()
+    )
+  ) {
+    return null;
+  }
+  const fields = ['publisher', 'author', 'year'];
+  displayValue = renderJsonList(value, fields);
+  }  else if (label === 'Contacts') {
+    if (Array.isArray(value)) {
+    const fields = ['name', 'email'];
+    displayValue = renderJsonList(value, fields);
+  } else {
+    displayValue = <span className="italic text-gray-500">No data</span>;
+  }
+}  else if (label === 'Others') {
+  if (Array.isArray(value) && value.length > 0) {
     displayValue = (
-      <ul className="list-disc ml-4">
-        {value.map((entry, index) => (
-          <li key={index}>
-            {entry.name} ({entry.year})
+      <ul className="list-disc list-inside space-y-1">
+        {value.map((item, idx) => (
+          <li key={idx}>
+            <strong>{item.field}:</strong> {item.value}
           </li>
         ))}
       </ul>
@@ -124,8 +171,11 @@ export default function UniversityPage() {
   } else {
     displayValue = <span className="italic text-gray-500">No data</span>;
   }
-}
+} else if (typeof value === 'boolean') {
+  displayValue = value ? 'Yes' : 'No';
+} else { displayValue = value; }
 
+  if (!displayValue) return null;
   return (
     <li key={label} className="text-sm text-gray-700 ml-4">
       <strong>{label}:</strong> {displayValue}
@@ -193,6 +243,7 @@ export default function UniversityPage() {
                       {agreements.map((agreement) => (
                         <div key={agreement.id} className="mb-4 border border-gray-200 rounded p-4 shadow-sm bg-white">
                           <ul className="list-disc ml-6">
+                            {renderAttribute('Contacts', agreement.contacts)}
                             {renderAttribute('JUC Member', agreement.juc_member)}
                             {renderAttribute('Academic Collaboration', agreement.academic_collab)}
                             {renderAttribute('Research Collaboration', agreement.research_collab)}
@@ -207,6 +258,8 @@ export default function UniversityPage() {
                             {renderAttribute('Student Mobility', agreement.student_mobility)}
                             {renderAttribute('Joint Supervision', agreement.joint_supervision)}
                             {renderAttribute('Joint Publication', agreement.joint_publication)}
+                            {renderAttribute('Others', agreement.others)}
+
                           </ul>
                           <div className="flex justify-end mt-4 space-x-2">
                             <button
@@ -240,7 +293,26 @@ export default function UniversityPage() {
             <h2 className="text-xl font-semibold mb-4">Edit Agreement</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-[60vh] overflow-y-auto">
 
-{Object.entries(editAgreement).map(([key, value]) => {
+{[
+  'contacts',
+  'juc_member',
+  'academic_collab',
+  'jd_dd',
+  'joint_lab',
+  'co_teaching',
+  'staff_mobility',
+  'student_mobility',
+  'joint_supervision',
+  'research_collab',  // <-- shown toggle
+  'joint_research',   // <-- appears directly under the toggle
+  'joint_publication',
+  'start_date',
+  'end_date',
+  'i_kohza',
+  'pic_mjiit',
+  'others'
+].map((key) => {
+  const value = editAgreement[key];
   if (key === 'id') return null;
 
   const isAcademicField = ['jd_dd', 'joint_lab', 'staff_mobility', 'student_mobility', 'joint_supervision', 'co_teaching'].includes(key);
@@ -250,61 +322,108 @@ export default function UniversityPage() {
     return null;
   }
 
-  if (key === 'co_teaching') {
-    let coTeachingArray = [];
+  if (key === 'start_date' || key === 'end_date') {
+  const date = value ? new Date(value) : new Date();
 
+  const year = date.getFullYear();
+  const month = date.getMonth() + 1;
+  const day = date.getDate();
+
+  const years = Array.from({ length: 401 }, (_, i) => new Date().getFullYear() - 200 + i);
+  const months = Array.from({ length: 12 }, (_, i) => i + 1);
+  const days = Array.from({ length: 31 }, (_, i) => i + 1);
+
+  const updateDate = (newYear, newMonth, newDay) => {
+    const newDate = new Date(newYear, newMonth - 1, newDay);
+    setEditAgreement((prev) => ({
+      ...prev,
+      [key]: newDate.toISOString().split('T')[0],
+    }));
+  };
+
+  return (
+    <div key={key} className="col-span-full">
+      <label className="text-sm text-gray-700 block mb-1">{key === 'start_date' ? 'Start Date' : 'End Date'}</label>
+      <div className="flex gap-2">
+        <select
+          value={year}
+          onChange={(e) => updateDate(+e.target.value, month, day)}
+          className="border border-gray-300 rounded px-2 py-1"
+        >
+          {years.map((y) => <option key={y} value={y}>{y}</option>)}
+        </select>
+        <select
+          value={month}
+          onChange={(e) => updateDate(year, +e.target.value, day)}
+          className="border border-gray-300 rounded px-2 py-1"
+        >
+          {months.map((m) => <option key={m} value={m}>{m}</option>)}
+        </select>
+        <select
+          value={day}
+          onChange={(e) => updateDate(year, month, +e.target.value)}
+          className="border border-gray-300 rounded px-2 py-1"
+        >
+          {days.map((d) => <option key={d} value={d}>{d}</option>)}
+        </select>
+      </div>
+    </div>
+  );
+}
+
+
+  // Helper to render dynamic JSON fields
+  const renderJsonArrayEditor = (key, label, fields) => {
+    let arr = [];
     try {
-      coTeachingArray = Array.isArray(value) ? value : JSON.parse(value) || [];
+      arr = Array.isArray(value) ? value : JSON.parse(value) || [];
     } catch {
-      coTeachingArray = [];
+      arr = [];
     }
 
-    const handleCoTeachingChange = (index, field, fieldValue) => {
-      const updated = [...coTeachingArray];
+    const handleChange = (index, field, fieldValue) => {
+      const updated = [...arr];
       updated[index] = { ...updated[index], [field]: fieldValue };
       setEditAgreement((prev) => ({
         ...prev,
-        co_teaching: updated
+        [key]: updated
       }));
     };
 
-    const handleAddCoTeaching = () => {
+    const handleAdd = () => {
+      const newEntry = fields.reduce((obj, f) => ({ ...obj, [f]: '' }), {});
       setEditAgreement((prev) => ({
         ...prev,
-        co_teaching: [...coTeachingArray, { name: '', year: '' }]
+        [key]: [...arr, newEntry]
       }));
     };
 
-    const handleRemoveCoTeaching = (index) => {
-      const updated = coTeachingArray.filter((_, i) => i !== index);
+    const handleRemove = (index) => {
+      const updated = arr.filter((_, i) => i !== index);
       setEditAgreement((prev) => ({
         ...prev,
-        co_teaching: updated
+        [key]: updated
       }));
     };
 
     return (
       <div key={key} className="col-span-full">
-        <label className="text-sm text-gray-700 block mb-1">Co-Teaching</label>
-        {coTeachingArray.map((item, index) => (
+        <label className="text-sm text-gray-700 block mb-1">{label}</label>
+        {arr.map((item, index) => (
           <div key={index} className="flex gap-2 items-center mb-2">
-            <input
-              type="text"
-              placeholder="Name"
-              value={item.name || ''}
-              onChange={(e) => handleCoTeachingChange(index, 'name', e.target.value)}
-              className="flex-1 px-3 py-2 border border-gray-300 rounded-md"
-            />
-            <input
-              type="text"
-              placeholder="Year"
-              value={item.year || ''}
-              onChange={(e) => handleCoTeachingChange(index, 'year', e.target.value)}
-              className="w-[100px] px-3 py-2 border border-gray-300 rounded-md"
-            />
+            {fields.map((field, i) => (
+              <input
+                key={i}
+                type="text"
+                placeholder={field.replace(/_/g, ' ')}
+                value={item[field] || ''}
+                onChange={(e) => handleChange(index, field, e.target.value)}
+                className="px-3 py-2 border border-gray-300 rounded-md"
+              />
+            ))}
             <button
               type="button"
-              onClick={() => handleRemoveCoTeaching(index)}
+              onClick={() => handleRemove(index)}
               className="text-red-500 hover:text-red-700"
             >
               ✕
@@ -313,21 +432,48 @@ export default function UniversityPage() {
         ))}
         <button
           type="button"
-          onClick={handleAddCoTeaching}
+          onClick={handleAdd}
           className="mt-2 px-3 py-1 bg-blue-500 text-white text-sm rounded hover:bg-blue-600"
         >
-          Add Co-Teaching
+          Add {label}
         </button>
       </div>
     );
+  };
+
+  // === Render JSONB fields ===
+  if (key === 'co_teaching') {
+    return renderJsonArrayEditor('co_teaching', 'Co-Teaching', ['name', 'year']);
+  }
+  if (key === 'staff_mobility') {
+    return renderJsonArrayEditor('staff_mobility', 'Staff Mobility', ['name', 'year']);
+  }
+  if (key === 'student_mobility') {
+    return renderJsonArrayEditor('student_mobility', 'Student Mobility', ['name', 'year', 'number_of_students']);
+  }
+  if (key === 'joint_supervision') {
+    return renderJsonArrayEditor('joint_supervision', 'Joint Supervision', ['name', 'year']);
+  }
+  if (key === 'joint_research') {
+    return renderJsonArrayEditor('joint_research', 'Joint Research', ['name', 'year']);
+  }
+  if (key === 'joint_publication') {
+    return renderJsonArrayEditor('joint_publication', 'Joint Publication', ['publisher', 'author', 'year']);
+  }
+  if (key === 'contacts') {
+  return renderJsonArrayEditor('contacts', 'Contacts', ['name', 'email']);
+  }
+  if (key === 'others') {
+  return renderJsonArrayEditor('others', 'Others', ['field', 'value']);
   }
 
-  if (key === 'juc_member' || key === 'academic_collab' || key === 'research_collab' || key === 'jd_dd') {
+
+  // === Handle yes/no toggles ===
+  if (key === 'juc_member' || key === 'academic_collab' || key === 'research_collab') {
     const labelMap = {
       juc_member: 'JUC Member',
       academic_collab: 'Academic Collaboration',
-      research_collab: 'Research Collaboration',
-      jd_dd: 'Join Degree / Double Degree'
+      research_collab: 'Research Collaboration'
     };
 
     return (
@@ -337,18 +483,14 @@ export default function UniversityPage() {
           <button
             type="button"
             onClick={() => setEditAgreement((prev) => ({ ...prev, [key]: true }))}
-            className={`px-4 py-2 rounded ${
-              value === true ? 'bg-green-600 text-white' : 'bg-gray-200 text-gray-800'
-            }`}
+            className={`px-4 py-2 rounded ${value === true ? 'bg-green-600 text-white' : 'bg-gray-200 text-gray-800'}`}
           >
             Yes
           </button>
           <button
             type="button"
             onClick={() => setEditAgreement((prev) => ({ ...prev, [key]: false }))}
-            className={`px-4 py-2 rounded ${
-              value === false ? 'bg-red-600 text-white' : 'bg-gray-200 text-gray-800'
-            }`}
+            className={`px-4 py-2 rounded ${value === false ? 'bg-red-600 text-white' : 'bg-gray-200 text-gray-800'}`}
           >
             No
           </button>
@@ -357,6 +499,26 @@ export default function UniversityPage() {
     );
   }
 
+  if (key === 'jd_dd') 
+    { 
+      const labelMap = { jd_dd: "Join Degree / Double Degree" };
+      return (
+      <div key={key} className="col-span-full">
+        <label className="text-sm text-gray-700 block mb-1">{labelMap[key]}</label>
+        <div className="flex gap-2">
+
+      <textarea
+        name={key}
+        value={value ?? ''}
+        onChange={handleModalChange}
+        className="w-full px-3 py-2 border border-gray-300 rounded-md resize-y min-h-[80px]"
+      />
+      </div>
+      </div>
+          )
+    }
+
+  // === Default text area fallback ===
   return (
     <div key={key} className="col-span-full">
       <label className="text-sm text-gray-700 block mb-1">{key}</label>
@@ -369,7 +531,6 @@ export default function UniversityPage() {
     </div>
   );
 })}
-
 
             </div>
             <div className="flex justify-end mt-6 space-x-2">
