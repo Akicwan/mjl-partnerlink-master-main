@@ -111,27 +111,20 @@ export default function UniversityPage() {
 
   // Special handling for co_teaching JSON string
   if (label === 'Co-Teaching') {
-    try {
-      const parsed = JSON.parse(value);
-      if (Array.isArray(parsed)) {
-        displayValue = (
-          <ul className="list-disc ml-4">
-            {parsed.map((entry, index) => (
-              <li key={index}>
-                {entry.name} ({entry.year})
-              </li>
-            ))}
-          </ul>
-        );
-      } else {
-        displayValue = value;
-      }
-    } catch (e) {
-      displayValue = value; // Fallback in case of JSON parse error
-    }
+  if (Array.isArray(value)) {
+    displayValue = (
+      <ul className="list-disc ml-4">
+        {value.map((entry, index) => (
+          <li key={index}>
+            {entry.name} ({entry.year})
+          </li>
+        ))}
+      </ul>
+    );
   } else {
-    displayValue = typeof value === 'boolean' ? (value ? 'Yes' : 'No') : value;
+    displayValue = <span className="italic text-gray-500">No data</span>;
   }
+}
 
   return (
     <li key={label} className="text-sm text-gray-700 ml-4">

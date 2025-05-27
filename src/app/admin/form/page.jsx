@@ -68,7 +68,7 @@ export default function AgreementForm() {
       ...form,
       contacts,
       others,
-      co_teaching: JSON.stringify(coTeachings) // Store as string for text column
+      co_teaching: coTeachings 
     };
 
     const { data, error } = await supabase.from('agreements_2').insert([payload]).select();
