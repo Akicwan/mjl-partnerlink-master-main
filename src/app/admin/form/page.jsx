@@ -9,9 +9,17 @@ import { supabase } from '../../lib/supabaseClient';
 export default function AgreementForm() {
   const [userEmail, setUserEmail] = useState(null);
   const router = useRouter();
+
   const [contacts, setContacts] = useState([{ name: '', email: '' }]);
   const [others, setOthers] = useState([{ fieldName: '', value: '' }]);
   const [coTeachings, setCoTeachings] = useState([{ name: '', year: '' }]);
+  const [staffMobilities, setStaffMobilities] = useState([{ name: '', year: '' }]);
+  const [studentMobilities, setStudentMobilities] = useState([{ name: '', year: '', number_of_students: '' }]);
+  const [jointSupervisions, setJointSupervisions] = useState([{ name: '', year: '' }]);
+  const [jointResearches, setJointResearches] = useState([{ name: '', year: '' }]);
+  const [jointPublications, setJointPublications] = useState([{ publisher: '', author: '', year: '' }]);
+
+
   const [form, setForm] = useState({
     university: '', abbreviation: '', juc_member: null,
     agreement_type: '', academic_collab: false, research_collab: false,
@@ -65,11 +73,16 @@ export default function AgreementForm() {
   const handleSubmit = async e => {
     e.preventDefault();
     const payload = {
-      ...form,
-      contacts,
-      others,
-      co_teaching: JSON.stringify(coTeachings) // Store as string for text column
-    };
+    ...form,
+    contacts,
+    others,
+    co_teaching: coTeachings,
+    staff_mobility: staffMobilities,
+    student_mobility: studentMobilities,
+    joint_supervision: jointSupervisions,
+    joint_research: jointResearches,
+    joint_publication: jointPublications
+  };
 
     const { data, error } = await supabase.from('agreements_2').insert([payload]).select();
 
@@ -144,14 +157,11 @@ export default function AgreementForm() {
 
           {form.academic_collab && (
             <div className="grid grid-cols-2 gap-4">
-              {['jd_dd','joint_lab','staff_mobility','student_mobility','joint_supervision'].map(f => {
-  const labelMap = {
-    jd_dd: 'Join Degree / Double Degree',
-    joint_lab: 'Joint lab',
-    staff_mobility: 'Staff mobility',
-    student_mobility: 'Student mobility',
-    joint_supervision: 'Joint supervision'
-  };
+              {['jd_dd','joint_lab'].map(f => {
+              const labelMap = {
+                jd_dd: 'Join Degree / Double Degree',
+                joint_lab: 'Joint lab'
+              };
   return (
     <div key={f}>
       <label className="block font-medium text-black">{labelMap[f]}</label>
@@ -176,18 +186,131 @@ export default function AgreementForm() {
               </AnimatePresence>
               <button type="button" onClick={addCoTeaching} className={buttonClasses}>+ Add Co-Teaching</button>
             </div>
-          )}
+)}
 
-          {form.research_collab && (
-            <div className="grid grid-cols-2 gap-4">
-              {['joint_research','joint_publication'].map(f=>(
-                <div key={f}>
-                  <label className="block font-medium text-black capitalize">{f.replace(/_/g,' ')}</label>
-                  <textarea rows={1} value={form[f]} onChange={e=>handleFormChange(f,e.target.value)} className={inputClasses} />
-                </div>
-              ))}
-            </div>
-          )}
+{form.academic_collab && (
+<div className="space-y-2">
+  <label className="block font-medium text-black">Staff Mobility</label>
+  <AnimatePresence>
+    {staffMobilities.map((m, i) => (
+      <motion.div key={i} className="grid grid-cols-3 gap-4 items-center"
+        initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 10 }} transition={{ duration: 0.2 }}>
+        <textarea placeholder="Name" value={m.name} onChange={e => {
+          const updated = [...staffMobilities]; updated[i].name = e.target.value; setStaffMobilities(updated);
+        }} className={inputClasses} rows={1} />
+        <textarea placeholder="Year" value={m.year} onChange={e => {
+          const updated = [...staffMobilities]; updated[i].year = e.target.value; setStaffMobilities(updated);
+        }} className={inputClasses} rows={1} />
+        {staffMobilities.length > 1 && (
+          <button type="button" onClick={() => setStaffMobilities(staffMobilities.filter((_, idx) => idx !== i))} className={deleteButtonClasses}>×</button>
+        )}
+      </motion.div>
+    ))}
+  </AnimatePresence>
+  <button type="button" onClick={() => setStaffMobilities([...staffMobilities, { name: '', year: '' }])} className={buttonClasses}>+ Add Staff Mobility</button>
+</div>
+)}
+
+
+{form.academic_collab && (
+<div className="space-y-2">
+  <label className="block font-medium text-black">Student Mobility</label>
+  <AnimatePresence>
+    {studentMobilities.map((s, i) => (
+      <motion.div key={i} className="grid grid-cols-4 gap-4 items-center"
+        initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 10 }} transition={{ duration: 0.2 }}>
+        <textarea placeholder="Name" value={s.name} onChange={e => {
+          const updated = [...studentMobilities]; updated[i].name = e.target.value; setStudentMobilities(updated);
+        }} className={inputClasses} rows={1} />
+        <textarea placeholder="Year" value={s.year} onChange={e => {
+          const updated = [...studentMobilities]; updated[i].year = e.target.value; setStudentMobilities(updated);
+        }} className={inputClasses} rows={1} />
+        <textarea placeholder="Number of Students" value={s.number_of_students} onChange={e => {
+          const updated = [...studentMobilities]; updated[i].number_of_students = e.target.value; setStudentMobilities(updated);
+        }} className={inputClasses} rows={1} />
+        {studentMobilities.length > 1 && (
+          <button type="button" onClick={() => setStudentMobilities(studentMobilities.filter((_, idx) => idx !== i))} className={deleteButtonClasses}>×</button>
+        )}
+      </motion.div>
+    ))}
+  </AnimatePresence>
+  <button type="button" onClick={() => setStudentMobilities([...studentMobilities, { name: '', year: '', number_of_students: '' }])} className={buttonClasses}>+ Add Student Mobility</button>
+</div>
+)}
+
+{form.academic_collab && (
+<div className="space-y-2">
+  <label className="block font-medium text-black">Joint Supervision</label>
+  <AnimatePresence>
+    {jointSupervisions.map((j, i) => (
+      <motion.div key={i} className="grid grid-cols-3 gap-4 items-center"
+        initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 10 }} transition={{ duration: 0.2 }}>
+        <textarea placeholder="Name" value={j.name} onChange={e => {
+          const updated = [...jointSupervisions]; updated[i].name = e.target.value; setJointSupervisions(updated);
+        }} className={inputClasses} rows={1} />
+        <textarea placeholder="Year" value={j.year} onChange={e => {
+          const updated = [...jointSupervisions]; updated[i].year = e.target.value; setJointSupervisions(updated);
+        }} className={inputClasses} rows={1} />
+        {jointSupervisions.length > 1 && (
+          <button type="button" onClick={() => setJointSupervisions(jointSupervisions.filter((_, idx) => idx !== i))} className={deleteButtonClasses}>×</button>
+        )}
+      </motion.div>
+    ))}
+  </AnimatePresence>
+  <button type="button" onClick={() => setJointSupervisions([...jointSupervisions, { name: '', year: '' }])} className={buttonClasses}>+ Add Joint Supervision</button>
+</div>
+)}
+
+{form.research_collab && (
+<div className="space-y-2">
+  <label className="block font-medium text-black">Joint Research</label>
+  <AnimatePresence>
+    {jointResearches.map((r, i) => (
+      <motion.div key={i} className="grid grid-cols-3 gap-4 items-center"
+        initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 10 }} transition={{ duration: 0.2 }}>
+        <textarea placeholder="Name" value={r.name} onChange={e => {
+          const updated = [...jointResearches]; updated[i].name = e.target.value; setJointResearches(updated);
+        }} className={inputClasses} rows={1} />
+        <textarea placeholder="Year" value={r.year} onChange={e => {
+          const updated = [...jointResearches]; updated[i].year = e.target.value; setJointResearches(updated);
+        }} className={inputClasses} rows={1} />
+        {jointResearches.length > 1 && (
+          <button type="button" onClick={() => setJointResearches(jointResearches.filter((_, idx) => idx !== i))} className={deleteButtonClasses}>×</button>
+        )}
+      </motion.div>
+    ))}
+  </AnimatePresence>
+  <button type="button" onClick={() => setJointResearches([...jointResearches, { name: '', year: '' }])} className={buttonClasses}>+ Add Joint Research</button>
+</div>
+)}
+
+{form.research_collab && (
+<div className="space-y-2">
+  <label className="block font-medium text-black">Joint Publication</label>
+  <AnimatePresence>
+    {jointPublications.map((p, i) => (
+      <motion.div key={i} className="grid grid-cols-4 gap-4 items-center"
+        initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 10 }} transition={{ duration: 0.2 }}>
+        <textarea placeholder="Publisher" value={p.publisher} onChange={e => {
+          const updated = [...jointPublications]; updated[i].publisher = e.target.value; setJointPublications(updated);
+        }} className={inputClasses} rows={1} />
+        <textarea placeholder="Author" value={p.author} onChange={e => {
+          const updated = [...jointPublications]; updated[i].author = e.target.value; setJointPublications(updated);
+        }} className={inputClasses} rows={1} />
+        <textarea placeholder="Year" value={p.year} onChange={e => {
+          const updated = [...jointPublications]; updated[i].year = e.target.value; setJointPublications(updated);
+        }} className={inputClasses} rows={1} />
+        {jointPublications.length > 1 && (
+          <button type="button" onClick={() => setJointPublications(jointPublications.filter((_, idx) => idx !== i))} className={deleteButtonClasses}>×</button>
+        )}
+      </motion.div>
+    ))}
+  </AnimatePresence>
+  <button type="button" onClick={() => setJointPublications([...jointPublications, { publisher: '', author: '', year: '' }])} className={buttonClasses}>+ Add Joint Publication</button>
+</div>
+)}
+
+
 
           {/* Dates & PIC fields */}
           <div className="grid grid-cols-2 gap-4">
@@ -212,7 +335,7 @@ export default function AgreementForm() {
               {others.map((o,i)=>(
                 <motion.div key={i} className="grid grid-cols-3 gap-4 items-center"
                   initial={{opacity:0,y:-10}} animate={{opacity:1,y:0}} exit={{opacity:0,y:10}} transition={{duration:0.2}}>
-                  <textarea placeholder="Field Name" value={o.fieldName} onChange={e=>updateOther(i,'fieldName',e.target.value)} className={inputClasses} rows={1} />
+                  <textarea placeholder="Field Name" value={o.field} onChange={e=>updateOther(i,'field',e.target.value)} className={inputClasses} rows={1} />
                   <textarea placeholder="Value" value={o.value} onChange={e=>updateOther(i,'value',e.target.value)} className={inputClasses} rows={1} />
                   {others.length>1&&<button type="button" onClick={()=>removeOther(i)} className={deleteButtonClasses}>×</button>}
                 </motion.div>
