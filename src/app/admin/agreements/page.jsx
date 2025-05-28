@@ -222,7 +222,7 @@ export default function AgreementsPage() {
       </div>
 
 
-      {/* Modal */}
+     {/* Modal */}
 {selectedAgreement && (
   <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40 backdrop-blur-md transition-all">
     <div className="bg-white w-[90vw] max-w-5xl max-h-[90vh] overflow-y-auto p-8 rounded-2xl shadow-2xl relative">
@@ -232,134 +232,132 @@ export default function AgreementsPage() {
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-sm">
         {Object.entries(editedAgreement).map(([key, value]) => {
-          if (key === 'id' || key === 'contacts' || key === 'others') return null;
+  if (['id', 'contacts', 'others'].includes(key)) return null;
 
-          if (key === 'start_date' || key === 'end_date') {
-            const label = key === 'start_date' ? 'Start Date' : 'End Date';
-            return (
-              <div key={key} className="flex flex-col">
-                <label className="block font-medium text-black mb-1">
-                  {label}<span className="text-red-500">*</span>
-                </label>
-                {editMode ? (
-                  <DatePicker
-                    selected={value ? new Date(value) : null}
-                    onChange={(date) => setEditedAgreement({ ...editedAgreement, [key]: date })}
-                    dateFormat="dd MMM yyyy"
-                    showYearDropdown
-                    scrollableYearDropdown
-                    className="border border-gray-300 px-4 py-2 rounded-md focus:outline-none focus:ring-2 focus:ring-[#D9AC42]"
-                  />
-                ) : (
-                  <p className="text-gray-800 bg-gray-100 px-3 py-2 rounded">
-                    {value ? new Date(value).toLocaleDateString() : '-'}
-                  </p>
-                )}
-              </div>
-            );
-          }
+  // 日期字段
+  if (key === 'start_date' || key === 'end_date') {
+    const label = key === 'start_date' ? 'Start Date' : 'End Date';
+    return (
+      <div key={key} className="flex flex-col">
+        <label className="block font-medium text-black mb-1">
+          {label}<span className="text-red-500">*</span>
+        </label>
+        {editMode ? (
+          <DatePicker
+            selected={value ? new Date(value) : null}
+            onChange={(date) => setEditedAgreement(prev => ({ ...prev, [key]: date }))}
+            dateFormat="dd MMM yyyy"
+            showYearDropdown
+            scrollableYearDropdown
+            className="border border-gray-300 px-4 py-2 rounded-md focus:outline-none focus:ring-2 focus:ring-[#D9AC42]"
+          />
+        ) : (
+          <p className="text-gray-800 bg-gray-100 px-3 py-2 rounded">
+            {value ? new Date(value).toLocaleDateString() : '-'}
+          </p>
+        )}
+      </div>
+    );
+  }
 
-          if (key === 'agreement_type') {
-            const agreementTypes = [
-              'MOA', 'MOA Regional Conference Program Agreement', 'MOU', 'Cross Appointment',
-              'Academic Cooperation', 'Outsourcing Agreement', 'Satellite Office', 'Exchange Agreement',
-              'Agreement', 'Academic Agreement', 'Collaborative Research Agreement Biological Soil Crust (BSC)',
-              'LOA & Outsourcing Agreement (two agreement types)', 'CRA', 'SEA', 'LOA', 'LOC', 'LOI', 'JRA'
-            ];
+  // 枚举下拉字段
+  if (key === 'agreement_type') {
+    const agreementTypes = [
+      'MOA', 'MOA Regional Conference Program Agreement', 'MOU', 'Cross Appointment',
+      'Academic Cooperation', 'Outsourcing Agreement', 'Satellite Office', 'Exchange Agreement',
+      'Agreement', 'Academic Agreement', 'Collaborative Research Agreement Biological Soil Crust (BSC)',
+      'LOA & Outsourcing Agreement (two agreement types)', 'CRA', 'SEA', 'LOA', 'LOC', 'LOI', 'JRA'
+    ];
+    return (
+      <div key={key} className="flex flex-col">
+        <label className="text-[#1F2163] font-medium capitalize mb-1">Agreement Type:</label>
+        {editMode ? (
+          <select
+            value={value || ''}
+            onChange={(e) => setEditedAgreement(prev => ({ ...prev, [key]: e.target.value }))}
+            className="border border-gray-300 px-4 py-2 rounded-md focus:outline-none focus:ring-2 focus:ring-[#D9AC42]"
+          >
+            <option value="" disabled>Select Agreement Type</option>
+            {agreementTypes.map((type, idx) => (
+              <option key={idx} value={type}>{type}</option>
+            ))}
+          </select>
+        ) : (
+          <p className="text-gray-800 bg-gray-100 px-3 py-2 rounded">{value || '-'}</p>
+        )}
+      </div>
+    );
+  }
 
-            return (
-              <div key={key} className="flex flex-col">
-                <label className="text-[#1F2163] font-medium capitalize mb-1">
-                  Agreement Type:
-                </label>
-                {editMode ? (
-                  <select
-                    value={value || ''}
-                    onChange={(e) => setEditedAgreement({ ...editedAgreement, [key]: e.target.value })}
-                    className="border border-gray-300 px-4 py-2 rounded-md focus:outline-none focus:ring-2 focus:ring-[#D9AC42]"
-                  >
-                    <option value="" disabled>Select Agreement Type</option>
-                    {agreementTypes.map((type, index) => (
-                      <option key={index} value={type}>{type}</option>
-                    ))}
-                  </select>
-                ) : (
-                  <p className="text-gray-800 bg-gray-100 px-3 py-2 rounded">
-                    {value || '-'}
-                  </p>
-                )}
-              </div>
-            );
-          }
+  // 布尔值字段
+  if (['juc_member', 'academic_collab', 'research_collab'].includes(key)) {
+    return (
+      <div key={key} className="flex flex-col">
+        <label className="text-[#1F2163] font-medium capitalize mb-1">{key.replace(/_/g, ' ')}:</label>
+        {editMode ? (
+          <select
+            value={value ? 'yes' : 'no'}
+            onChange={(e) => setEditedAgreement(prev => ({ ...prev, [key]: e.target.value === 'yes' }))}
+            className="border border-gray-300 px-4 py-2 rounded-md focus:outline-none focus:ring-2 focus:ring-[#D9AC42]"
+          >
+            <option value="yes">Yes</option>
+            <option value="no">No</option>
+          </select>
+        ) : (
+          <p className="text-gray-800 bg-gray-100 px-3 py-2 rounded">{value ? 'Yes' : 'No'}</p>
+        )}
+      </div>
+    );
+  }
 
-          if (['juc_member', 'academic_collab', 'research_collab'].includes(key)) {
-            return (
-              <div key={key} className="flex flex-col">
-                <label className="text-[#1F2163] font-medium capitalize mb-1">
-                  {key.replace(/_/g, ' ')}:
-                </label>
-                {editMode ? (
-                  <select
-                    value={value ? 'Yes' : 'No'}
-                    onChange={(e) => setEditedAgreement({ ...editedAgreement, [key]: e.target.value === 'Yes' })}
-                    className="border border-gray-300 px-4 py-2 rounded-md focus:outline-none focus:ring-2 focus:ring-[#D9AC42]"
-                  >
-                    <option value="Yes">Yes</option>
-                    <option value="No">No</option>
-                  </select>
-                ) : (
-                  <p className="text-gray-800 bg-gray-100 px-3 py-2 rounded">
-                    {value ? 'Yes' : 'No'}
-                  </p>
-                )}
-              </div>
-            );
-          }
+  // 数组字段处理（staff_mobility、student_mobility、joint_supervision 等）
+  const listFields = {
+    staff_mobility: item => `• ${item.name} (${item.year})`,
+    student_mobility: item => `• ${item.name} (${item.year}) - ${item.number_of_students} students`,
+    joint_supervision: item => `• ${item.name} (${item.year})`,
+    joint_research: item => `• ${item.name} (${item.year})`,
+    joint_publication: item => `• ${item.publisher} - ${item.author} (${item.year})`,
+    co_teaching: item => `• ${item.name} (${item.year})`
+  };
 
-          if (
-            [
-              'joint_lab', 'co_teaching', 'staff_mobility', 'student_mobility',
-              'joint_supervision', 'joint_publication', 'pic_mjiit', 'joint_research'
-            ].includes(key)
-          ) {
-            return (
-              <div key={key} className="flex flex-col">
-                <label className="text-[#1F2163] font-medium capitalize mb-1">
-                  {key.replace(/_/g, ' ')}:
-                </label>
-                {editMode ? (
-                  <textarea
-                    value={value ?? ''}
-                    onChange={(e) => setEditedAgreement({ ...editedAgreement, [key]: e.target.value })}
-                    className="border border-gray-300 px-4 py-2 rounded-md resize-y min-h-[80px] focus:outline-none focus:ring-2 focus:ring-[#D9AC42]"
-                  />
-                ) : (
-                  <p className="text-gray-800 bg-gray-100 px-3 py-2 rounded whitespace-pre-wrap">
-                    {value ?? '-'}
-                  </p>
-                )}
-              </div>
-            );
-          }
+  if (listFields[key] && Array.isArray(value)) {
+    return (
+      <div key={key} className="flex flex-col">
+        <label className="text-[#1F2163] font-medium capitalize mb-1">
+          {key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}:
+        </label>
+        {value.length > 0 ? (
+          <ul className="bg-gray-100 px-3 py-2 rounded text-gray-800 space-y-1 max-h-32 overflow-y-auto">
+            {value.map((item, index) => (
+              <li key={index}>{listFields[key](item)}</li>
+            ))}
+          </ul>
+        ) : (
+          <p className="bg-gray-100 px-3 py-2 rounded text-gray-800">-</p>
+        )}
+      </div>
+    );
+  }
 
-          return (
-            <div key={key} className="flex flex-col">
-              <label className="text-[#1F2163] font-medium capitalize mb-1">
-                {key.replace(/_/g, ' ')}:
-              </label>
-              {editMode ? (
-                <input
-                  type="text"
-                  value={value ?? ''}
-                  onChange={(e) => setEditedAgreement({ ...editedAgreement, [key]: e.target.value })}
-                  className="border border-gray-300 px-4 py-2 rounded-md focus:outline-none focus:ring-2 focus:ring-[#D9AC42]"
-                />
-              ) : (
-                <p className="text-gray-800 bg-gray-100 px-3 py-2 rounded">{value ?? '-'}</p>
-              )}
-            </div>
-          );
-        })}
+  // 默认字段展示
+  return (
+    <div key={key} className="flex flex-col">
+      <label className="text-[#1F2163] font-medium capitalize mb-1">{key.replace(/_/g, ' ')}:</label>
+      {editMode ? (
+        <input
+          type="text"
+          value={value || ''}
+          onChange={(e) => setEditedAgreement(prev => ({ ...prev, [key]: e.target.value }))}
+          className="border border-gray-300 px-4 py-2 rounded-md focus:outline-none focus:ring-2 focus:ring-[#D9AC42]"
+        />
+      ) : (
+        <p className="text-gray-800 bg-gray-100 px-3 py-2 rounded">{value || '-'}</p>
+      )}
+    </div>
+  );
+})}
+
+
       </div>
 
       <div className="flex justify-end gap-4 mt-6">
@@ -383,6 +381,7 @@ export default function AgreementsPage() {
     </div>
   </div>
 )}
+
 
 
     </Sidebar>

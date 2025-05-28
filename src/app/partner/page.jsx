@@ -214,98 +214,195 @@ export default function PartnerDashboard() {
         </div>
       </div>
 
-      {/* Agreement Details Modal */}
-      {selectedAgreement && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40 backdrop-blur-md transition-all">
-          <div className="bg-white w-[90vw] max-w-5xl max-h-[90vh] overflow-y-auto p-8 rounded-2xl shadow-2xl relative">
-            <h2 className="text-2xl font-bold text-[#1F2163] mb-6 border-b pb-3">
-              Agreement Details
-            </h2>
+    {/* Agreement Details Modal */}
+{selectedAgreement && (
+  <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40 backdrop-blur-md transition-all">
+    <div className="bg-white w-[90vw] max-w-5xl max-h-[90vh] overflow-y-auto p-8 rounded-2xl shadow-2xl relative">
+      <h2 className="text-2xl font-bold text-[#1F2163] mb-6 border-b pb-3">
+        Agreement Details
+      </h2>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-sm">
-              {Object.entries(selectedAgreement).map(([key, value]) => {
-                if (key === 'id' || key === 'contacts' || key === 'others') return null;
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-sm">
+        {Object.entries(selectedAgreement).map(([key, value]) => {
+          if (key === 'id' || key === 'contacts' || key === 'others') return null;
 
-                if (key === 'start_date' || key === 'end_date') {
-                  const label = key === 'start_date' ? 'Start Date' : 'End Date';
-                  return (
-                    <div key={key} className="flex flex-col">
-                      <label className="block font-medium text-black mb-1">
-                        {label}
-                      </label>
-                      <p className="text-gray-800 bg-gray-100 px-3 py-2 rounded">
-                        {value ? new Date(value).toLocaleDateString() : '-'}
-                      </p>
-                    </div>
-                  );
-                }
+          if (key === 'start_date' || key === 'end_date') {
+            const label = key === 'start_date' ? 'Start Date' : 'End Date';
+            return (
+              <div key={key} className="flex flex-col">
+                <label className="block font-medium text-black mb-1">
+                  {label}
+                </label>
+                <p className="text-gray-800 bg-gray-100 px-3 py-2 rounded">
+                  {value ? new Date(value).toLocaleDateString() : '-'}
+                </p>
+              </div>
+            );
+          }
 
-                if (key === 'agreement_type') {
-                  return (
-                    <div key={key} className="flex flex-col">
-                      <label className="text-[#1F2163] font-medium capitalize mb-1">
-                        Agreement Type:
-                      </label>
-                      <p className="text-gray-800 bg-gray-100 px-3 py-2 rounded">
-                        {value || '-'}
-                      </p>
-                    </div>
-                  );
-                }
+          if (key === 'agreement_type') {
+            return (
+              <div key={key} className="flex flex-col">
+                <label className="text-[#1F2163] font-medium capitalize mb-1">
+                  Agreement Type:
+                </label>
+                <p className="text-gray-800 bg-gray-100 px-3 py-2 rounded">
+                  {value || '-'}
+                </p>
+              </div>
+            );
+          }
 
-                if (['juc_member', 'academic_collab', 'research_collab'].includes(key)) {
-                  return (
-                    <div key={key} className="flex flex-col">
-                      <label className="text-[#1F2163] font-medium capitalize mb-1">
-                        {key.replace(/_/g, ' ')}:
-                      </label>
-                      <p className="text-gray-800 bg-gray-100 px-3 py-2 rounded">
-                        {value ? 'Yes' : 'No'}
-                      </p>
-                    </div>
-                  );
-                }
+          if (['juc_member', 'academic_collab', 'research_collab'].includes(key)) {
+            return (
+              <div key={key} className="flex flex-col">
+                <label className="text-[#1F2163] font-medium capitalize mb-1">
+                  {key.replace(/_/g, ' ')}:
+                </label>
+                <p className="text-gray-800 bg-gray-100 px-3 py-2 rounded">
+                  {value ? 'Yes' : 'No'}
+                </p>
+              </div>
+            );
+          }
 
-                if (
-                  [
-                    'joint_lab', 'co_teaching', 'staff_mobility', 'student_mobility',
-                    'joint_supervision', 'joint_publication', 'pic_mjiit', 'joint_research'
-                  ].includes(key)
-                ) {
-                  return (
-                    <div key={key} className="flex flex-col">
-                      <label className="text-[#1F2163] font-medium capitalize mb-1">
-                        {key.replace(/_/g, ' ')}:
-                      </label>
-                      <p className="text-gray-800 bg-gray-100 px-3 py-2 rounded whitespace-pre-wrap">
-                        {value ?? '-'}
-                      </p>
-                    </div>
-                  );
-                }
-
-                return (
-                  <div key={key} className="flex flex-col">
-                    <label className="text-[#1F2163] font-medium capitalize mb-1">
-                      {key.replace(/_/g, ' ')}:
-                    </label>
-                    <p className="text-gray-800 bg-gray-100 px-3 py-2 rounded">{value ?? '-'}</p>
-                  </div>
-                );
-              })}
-            </div>
-
-            <div className="flex justify-end gap-4 mt-6">
-              <button
-                onClick={() => setSelectedAgreement(null)}
-                className="bg-gray-300 text-gray-700 py-2 px-6 rounded hover:bg-gray-400"
-              >
-                Close
-              </button>
-            </div>
-          </div>
-        </div>
+         if (key === 'staff_mobility' && Array.isArray(value)) {
+  return (
+    <div key={key} className="flex flex-col">
+      <label className="text-[#1F2163] font-medium capitalize mb-1">Staff Mobility:</label>
+      {value.length > 0 ? (
+        <ul className="bg-gray-100 px-3 py-2 rounded text-gray-800 space-y-1 max-h-32 overflow-y-auto">
+          {value.map((item, index) => (
+            <li key={index}>• {item.name} ({item.year})</li>
+          ))}
+        </ul>
+      ) : (
+        <p className="bg-gray-100 px-3 py-2 rounded text-gray-800">-</p>
       )}
+    </div>
+  );
+}
+
+if (key === 'student_mobility' && Array.isArray(value)) {
+  return (
+    <div key={key} className="flex flex-col">
+      <label className="text-[#1F2163] font-medium capitalize mb-1">Student Mobility:</label>
+      {value.length > 0 ? (
+        <ul className="bg-gray-100 px-3 py-2 rounded text-gray-800 space-y-1 max-h-32 overflow-y-auto">
+          {value.map((item, index) => (
+            <li key={index}>
+              • {item.name} ({item.year}) - {item.number_of_students} students
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p className="bg-gray-100 px-3 py-2 rounded text-gray-800">-</p>
+      )}
+    </div>
+  );
+}
+
+if (key === 'joint_supervision' && Array.isArray(value)) {
+  return (
+    <div key={key} className="flex flex-col">
+      <label className="text-[#1F2163] font-medium capitalize mb-1">Joint Supervision:</label>
+      {value.length > 0 ? (
+        <ul className="bg-gray-100 px-3 py-2 rounded text-gray-800 space-y-1 max-h-32 overflow-y-auto">
+          {value.map((item, index) => (
+            <li key={index}>• {item.name} ({item.year})</li>
+          ))}
+        </ul>
+      ) : (
+        <p className="bg-gray-100 px-3 py-2 rounded text-gray-800">-</p>
+      )}
+    </div>
+  );
+}
+
+if (key === 'joint_research' && Array.isArray(value)) {
+  return (
+    <div key={key} className="flex flex-col">
+      <label className="text-[#1F2163] font-medium capitalize mb-1">Joint Research:</label>
+      {value.length > 0 ? (
+        <ul className="bg-gray-100 px-3 py-2 rounded text-gray-800 space-y-1 max-h-32 overflow-y-auto">
+          {value.map((item, index) => (
+            <li key={index}>• {item.name} ({item.year})</li>
+          ))}
+        </ul>
+      ) : (
+        <p className="bg-gray-100 px-3 py-2 rounded text-gray-800">-</p>
+      )}
+    </div>
+  );
+}
+
+if (key === 'joint_publication' && Array.isArray(value)) {
+  return (
+    <div key={key} className="flex flex-col">
+      <label className="text-[#1F2163] font-medium capitalize mb-1">Joint Publication:</label>
+      {value.length > 0 ? (
+        <ul className="bg-gray-100 px-3 py-2 rounded text-gray-800 space-y-1 max-h-32 overflow-y-auto">
+          {value.map((item, index) => (
+            <li key={index}>
+              • {item.publisher} - {item.author} ({item.year})
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p className="bg-gray-100 px-3 py-2 rounded text-gray-800">-</p>
+      )}
+    </div>
+  );
+}
+
+if (key === 'co_teaching' && Array.isArray(value)) {
+  return (
+    <div key={key} className="flex flex-col">
+      <label className="text-[#1F2163] font-medium capitalize mb-1">Co Teaching:</label>
+      {value.length > 0 ? (
+        <ul className="bg-gray-100 px-3 py-2 rounded text-gray-800 space-y-1 max-h-32 overflow-y-auto">
+          {value.map((item, index) => (
+            <li key={index}>• {item.name} ({item.year})</li>
+          ))}
+        </ul>
+      ) : (
+        <p className="bg-gray-100 px-3 py-2 rounded text-gray-800">-</p>
+      )}
+    </div>
+  );
+}
+
+
+          // 🛠️ Fallback rendering for any other key
+          return (
+            <div key={key} className="flex flex-col">
+              <label className="text-[#1F2163] font-medium capitalize mb-1">
+                {key.replace(/_/g, ' ')}:
+              </label>
+              <p className="text-gray-800 bg-gray-100 px-3 py-2 rounded whitespace-pre-wrap">
+                {typeof value === 'object' && value !== null
+                  ? Array.isArray(value)
+                    ? value.map((v) => (typeof v === 'object' ? JSON.stringify(v) : v)).join(', ')
+                    : Object.entries(value).map(([k, v]) => `${k}: ${v}`).join(', ')
+                  : value ?? '-'}
+              </p>
+            </div>
+          );
+        })}
+      </div>
+
+      <div className="flex justify-end gap-4 mt-6">
+        <button
+          onClick={() => setSelectedAgreement(null)}
+          className="bg-gray-300 text-gray-700 py-2 px-6 rounded hover:bg-gray-400"
+        >
+          Close
+        </button>
+      </div>
+    </div>
+  </div>
+)}
+
     </Sidebar>
   );
 }
