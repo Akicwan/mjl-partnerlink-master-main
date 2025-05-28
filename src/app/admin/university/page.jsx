@@ -111,33 +111,49 @@ export default function UniversityPage() {
 
   // Generic handler for JSON arrays
   const renderJsonList = (arr, fields) => (
-    <ul className="list-disc ml-4">
-      {arr.map((entry, index) => (
-        <li key={index}>
-          {fields.map((field, i) => (
-            <span key={i}>
-              {entry[field] ? `${entry[field]}${i < fields.length - 1 ? ', ' : ''}` : ''}
-            </span>
-          ))}
-        </li>
-      ))}
-    </ul>
-  );
+  <ul className="list-disc ml-4">
+    {arr.map((entry, index) => {
+      const content = fields
+        .map((field) => entry[field])
+        .filter((val) => val && val.trim?.() !== '')
+        .join(', ');
+      if (!content) return null;
+      return <li key={index}>{content}</li>;
+    })}
+  </ul>
+);
 
-  if (label === 'Co-Teaching' || label === 'Staff Mobility' || label === 'Joint Supervision' || label === 'Joint Research') {
-    if (Array.isArray(value)) {
-      const fields = ['name', 'year'];
-      displayValue = renderJsonList(value, fields);
-    } else {
-      displayValue = <span className="italic text-gray-500">No data</span>;
-    }
-  } else if (label === 'Student Mobility') {
-    if (Array.isArray(value)) {
-      const fields = ['name', 'year', 'number_of_students'];
-      displayValue = renderJsonList(value, fields);
-    } else {
-      displayValue = <span className="italic text-gray-500">No data</span>;
-    }
+if (['Co-Teaching', 'Staff Mobility', 'Joint Supervision', 'Joint Research'].includes(label)) {
+  if (Array.isArray(value) && value.some(entry => Object.values(entry).some(v => v?.trim?.() !== ''))) {
+    const fields = ['name', 'year'];
+    displayValue = renderJsonList(value, fields);
+  } else {
+    return null;
+  }
+} else if (label === 'Student Mobility') {
+  if (Array.isArray(value) && value.some(entry => Object.values(entry).some(v => v?.trim?.() !== ''))) {
+    const fields = ['name', 'year', 'number_of_students'];
+    displayValue = renderJsonList(value, fields);
+  } else {
+    return null;
+  }
+} else if (label === 'Others') {
+  if (Array.isArray(value) && value.some(item => item.field?.trim() || item.value?.trim())) {
+    displayValue = (
+      <ul className="list-disc list-inside space-y-1">
+        {value.map((item, idx) => {
+          if (!item.field?.trim() && !item.value?.trim()) return null;
+          return (
+            <li key={idx}>
+              <strong>{item.field}:</strong> {item.value}
+            </li>
+          );
+        })}
+      </ul>
+    );
+  } else {
+    return null;
+  }
   }   else if (label === 'Joint Publication') {
   if (
     !Array.isArray(value) ||
@@ -154,20 +170,6 @@ export default function UniversityPage() {
     if (Array.isArray(value)) {
     const fields = ['name', 'email'];
     displayValue = renderJsonList(value, fields);
-  } else {
-    displayValue = <span className="italic text-gray-500">No data</span>;
-  }
-}  else if (label === 'Others') {
-  if (Array.isArray(value) && value.length > 0) {
-    displayValue = (
-      <ul className="list-disc list-inside space-y-1">
-        {value.map((item, idx) => (
-          <li key={idx}>
-            <strong>{item.field}:</strong> {item.value}
-          </li>
-        ))}
-      </ul>
-    );
   } else {
     displayValue = <span className="italic text-gray-500">No data</span>;
   }
@@ -288,7 +290,7 @@ export default function UniversityPage() {
 
       {/* EDIT MODAL */}
       {modalOpen && editAgreement && (
-        <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
+        <div className="fixed inset-0 min-h-screen bg-gradient-to-b from-[#692B2C] to-[#1F2163] p-4 flex items-center justify-center z-50">
           <div className="bg-white p-6 rounded-xl shadow-xl max-w-2xl w-full">
             <h2 className="text-xl font-semibold mb-4">Edit Agreement</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-[60vh] overflow-y-auto">

@@ -159,7 +159,7 @@ const markAsRead = async (id) => {
       </div>
 
       {/* Main Content Area */}
-      <div className="flex-1 flex flex-col p-6">
+      <div className="min-h-screen bg-gradient-to-b from-[#692B2C] to-[#1F2163] p-4 flex-1 flex flex-col p-6">
         {/* Top Header */}
         <div className="bg-[#1F2163] rounded-t-xl px-6 py-4 flex justify-between items-center shadow-md">
           <div className="flex-1"></div>
