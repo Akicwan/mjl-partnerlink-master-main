@@ -178,8 +178,8 @@ export default function AgreementForm() {
                 {coTeachings.map((c, i) => (
                   <motion.div key={i} className="grid grid-cols-3 gap-4 items-center"
                     initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 10 }} transition={{ duration: 0.2 }}>
-                    <textarea placeholder="Name" required value={c.name} onChange={e => updateCoTeaching(i, 'name', e.target.value)} className={inputClasses} rows={1} />
-                    <textarea placeholder="Year" required value={c.year} onChange={e => updateCoTeaching(i, 'year', e.target.value)} className={inputClasses} rows={1} />
+                    <textarea placeholder="Name" value={c.name} onChange={e => updateCoTeaching(i, 'name', e.target.value)} className={inputClasses} rows={1} />
+                    <textarea placeholder="Year" value={c.year} onChange={e => updateCoTeaching(i, 'year', e.target.value)} className={inputClasses} rows={1} />
                     {coTeachings.length > 1 && <button type="button" onClick={() => removeCoTeaching(i)} className={deleteButtonClasses}>×</button>}
                   </motion.div>
                 ))}
