@@ -4,75 +4,32 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '../lib/supabaseClient';
 import Sidebar from '../components/Sidebar';
-
 import {
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  Tooltip,
-  ResponsiveContainer,
-  CartesianGrid,
-  Legend,
+  ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, Legend
 } from 'recharts';
 
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import {
-  Table,
-  TableHeader,
-  TableBody,
-  TableRow,
-  TableHead,
-  TableCell,
-} from '@/components/ui/table';
-
-const CustomizedTick = ({ x, y, payload }) => {
-  const lines = payload.value.split('\n');
-  return (
-    <g transform={`translate(${x},${y})`}>
-      {lines.map((line, index) => (
-        <text
-          key={index}
-          x={0}
-          y={index * 12}
-          dy={16}
-          textAnchor="middle"
-          fill="#666"
-          fontSize={11}
-        >
-          {line}
-        </text>
-      ))}
-    </g>
-  );
-};
-
-const wrapLabel = (label) => {
-  return label.length > 25
-    ? label.replace(/\s(.{5,})$/, "\n$1")
-    : label;
-};
+import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 
 export default function AdminDashboard() {
   const [userEmail, setUserEmail] = useState(null);
-  const [agreementData, setAgreementData] = useState([]);
-  const [recentAgreements, setRecentAgreements] = useState([]);
+  const [mobilityData, setMobilityData] = useState([]);
+  const [jointData, setJointData] = useState([]);
+  const [coTeachingData, setCoTeachingData] = useState([]);
+  const [totalAgreements, setTotalAgreements] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [selectedFilter, setSelectedFilter] = useState('all');
   const router = useRouter();
 
   useEffect(() => {
     const fetchUser = async () => {
       const { data, error } = await supabase.auth.getUser();
-
       if (error || !data?.user) {
-        console.error("User fetch error:", error);
         router.push('/login');
       } else {
         setUserEmail(data.user.email);
       }
     };
-
     fetchUser();
   }, [router]);
 
@@ -82,76 +39,75 @@ export default function AdminDashboard() {
       setError(null);
 
       try {
-        // 1. Fetch agreements data
-        const { data: allData, error: allError } = await supabase
+        const { data: agreements, error: agreementsError } = await supabase
           .from('agreements_2')
-          .select('id, university');
+          .select('student_mobility, staff_mobility, joint_research, joint_publication, co_teaching, joint_supervision');
 
-        if (allError) {
-          throw new Error(`Agreements fetch error: ${allError.message}`);
-        }
+        if (agreementsError) throw new Error(agreementsError.message);
 
-        // 2. Initialize university map with agreements count
-        const universityMap = new Map();
-        allData.forEach(agreement => {
-          const uni = agreement.university || 'Unknown';
-          if (!universityMap.has(uni)) {
-            universityMap.set(uni, {
-              agreements: 0,
-              activities: 0
-            });
-          }
-          universityMap.get(uni).agreements++;
+        setTotalAgreements(agreements.length);
+
+        const mobilityTotals = {};
+        const jointTotals = {};
+        const coTeachingTotals = {};
+
+        agreements.forEach((agreement) => {
+          (agreement.student_mobility || []).forEach(({ year, number_of_students }) => {
+            const y = parseInt(year ?? '');
+            const students = parseInt(number_of_students ?? '');
+            if (!isNaN(y) && !isNaN(students)) {
+              if (!mobilityTotals[y]) mobilityTotals[y] = { year: y, students: 0, staff: 0 };
+              mobilityTotals[y].students += students;
+            }
+          });
+
+          (agreement.staff_mobility || []).forEach(({ year }) => {
+            const y = parseInt(year ?? '');
+            if (!isNaN(y)) {
+              if (!mobilityTotals[y]) mobilityTotals[y] = { year: y, students: 0, staff: 0 };
+              mobilityTotals[y].staff += 1;
+            }
+          });
+
+          (agreement.joint_research || []).forEach(({ year }) => {
+            const y = parseInt(year ?? '');
+            if (!isNaN(y)) {
+              if (!jointTotals[y]) jointTotals[y] = { year: y, joint_research: 0, joint_publication: 0 };
+              jointTotals[y].joint_research += 1;
+            }
+          });
+
+          (agreement.joint_publication || []).forEach(({ year }) => {
+            const y = parseInt(year ?? '');
+            if (!isNaN(y)) {
+              if (!jointTotals[y]) jointTotals[y] = { year: y, joint_research: 0, joint_publication: 0 };
+              jointTotals[y].joint_publication += 1;
+            }
+          });
+
+          (agreement.co_teaching || []).forEach(({ year }) => {
+            const y = parseInt(year ?? '');
+            if (!isNaN(y)) {
+              if (!coTeachingTotals[y]) coTeachingTotals[y] = { year: y, co_teaching: 0, joint_supervision: 0 };
+              coTeachingTotals[y].co_teaching += 1;
+            }
+          });
+
+          (agreement.joint_supervision || []).forEach(({ year }) => {
+            const y = parseInt(year ?? '');
+            if (!isNaN(y)) {
+              if (!coTeachingTotals[y]) coTeachingTotals[y] = { year: y, co_teaching: 0, joint_supervision: 0 };
+              coTeachingTotals[y].joint_supervision += 1;
+            }
+          });
         });
 
-        // 3. Try to fetch activities if table exists
-        try {
-          const { data: activities, error: activitiesError } = await supabase
-            .from('activities')
-            .select('agreement_id');
-
-          if (!activitiesError && activities) {
-            // Count activities per university
-            activities.forEach(activity => {
-              const agreement = allData.find(a => a.id === activity.agreement_id);
-              if (agreement) {
-                const uni = agreement.university || 'Unknown';
-                if (universityMap.has(uni)) {
-                  universityMap.get(uni).activities++;
-                }
-              }
-            });
-          }
-        } catch (activitiesErr) {
-          console.warn("Activities table not found or error fetching activities. Using zero values.");
-          // If activities table doesn't exist, just continue with zero values
-        }
-
-        // 4. Convert to array format for chart
-        const formatted = Array.from(universityMap.entries()).map(([university, counts]) => ({
-          university: wrapLabel(university),
-          agreements: counts.agreements,
-          activities: counts.activities
-        }));
-
-        setAgreementData(formatted);
-
-        // 5. Fetch recent agreements
-        const { data: recent, error: recentError } = await supabase
-          .from('agreements_2')
-          .select('university, agreement_type, start_date, end_date')
-          .order('start_date', { ascending: false })
-          .limit(4);
-
-        if (!recentError) {
-          setRecentAgreements(recent);
-        }
-
+        setMobilityData(Object.values(mobilityTotals).sort((a, b) => a.year - b.year));
+        setJointData(Object.values(jointTotals).sort((a, b) => a.year - b.year));
+        setCoTeachingData(Object.values(coTeachingTotals).sort((a, b) => a.year - b.year));
       } catch (err) {
-        console.error("Data fetch error:", err);
+        console.error('Fetch error:', err);
         setError(err.message);
-        setAgreementData([]);
-        setRecentAgreements([]);
       } finally {
         setLoading(false);
       }
@@ -160,119 +116,191 @@ export default function AdminDashboard() {
     if (userEmail) fetchData();
   }, [userEmail]);
 
-  const totalAgreements = agreementData.reduce((sum, item) => sum + item.agreements, 0);
-  const totalActivities = agreementData.reduce((sum, item) => sum + item.activities, 0);
+  const totalStudents = mobilityData.reduce((sum, item) => sum + item.students, 0);
+  const totalStaff = mobilityData.reduce((sum, item) => sum + item.staff, 0);
+  const totalJointResearch = jointData.reduce((sum, item) => sum + item.joint_research, 0);
+  const totalJointPublication = jointData.reduce((sum, item) => sum + item.joint_publication, 0);
+  const totalCoTeaching = coTeachingData.reduce((sum, item) => sum + item.co_teaching, 0);
+  const totalJointSupervision = coTeachingData.reduce((sum, item) => sum + item.joint_supervision, 0);
+
+  const summaryCards = (
+    <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mt-4 w-full">
+      {[
+        { label: 'Total Students', value: totalStudents },
+        { label: 'Total Staff', value: totalStaff },
+        { label: 'Joint Research', value: totalJointResearch },
+        { label: 'Joint Publication', value: totalJointPublication },
+        { label: 'Co-Teaching', value: totalCoTeaching },
+        { label: 'Joint Supervision', value: totalJointSupervision },
+        { label: 'Total Agreements', value: totalAgreements }
+      ].map(({ label, value }) => (
+        <Card key={label}>
+          <CardHeader>
+            <CardTitle className="text-md">{label}</CardTitle>
+            <p className="text-2xl font-bold">{value}</p>
+          </CardHeader>
+        </Card>
+      ))}
+    </div>
+  );
+
+  const mobilityCards = (
+    <div className="mt-4" style={{ width: '1000px', marginLeft: '450px' }}>
+    <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+
+      {[
+        { label: 'Total Students', value: totalStudents },
+        { label: 'Total Staff', value: totalStaff },
+        
+      ].map(({ label, value }) => (
+        <Card key={label}>
+          <CardHeader>
+            <CardTitle className="text-md">{label}</CardTitle>
+            <p className="text-2xl font-bold">{value}</p>
+          </CardHeader>
+        </Card>
+      ))}
+    </div>
+    </div>
+  );
+
+  const jointCards = (
+    <div className="mt-4" style={{ width: '1000px', marginLeft: '450px' }}>
+    <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+
+      {[
+        { label: 'Joint Research', value: totalJointResearch },
+        { label: 'Joint Publication', value: totalJointPublication },
+        
+      ].map(({ label, value }) => (
+        <Card key={label}>
+          <CardHeader>
+            <CardTitle className="text-md">{label}</CardTitle>
+            <p className="text-2xl font-bold">{value}</p>
+          </CardHeader>
+        </Card>
+      ))}
+    </div>
+    </div>
+  );
+
+  const coteachingsuperCards = (
+    <div className="mt-4" style={{ width: '1000px', marginLeft: '450px' }}>
+    <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+
+      {[
+        { label: 'Co-Teaching', value: totalCoTeaching },
+        { label: 'Joint Supervision', value: totalJointSupervision },
+        
+      ].map(({ label, value }) => (
+        <Card key={label}>
+          <CardHeader>
+            <CardTitle className="text-md">{label}</CardTitle>
+            <p className="text-2xl font-bold">{value}</p>
+          </CardHeader>
+        </Card>
+      ))}
+    </div>
+    </div>
+  );
+
+  const renderChart = (title, data, bars) => (
+    <Card className="h-[400px] w-full md:w-[60%] mx-auto">
+      <CardHeader><CardTitle>{title}</CardTitle></CardHeader>
+      <CardContent className="h-full">
+        <ResponsiveContainer width="100%" height="100%">
+          <BarChart data={data}>
+            <CartesianGrid strokeDasharray="3 3" />
+            <XAxis dataKey="year" />
+            <YAxis />
+            <Tooltip />
+            <Legend />
+            {bars}
+          </BarChart>
+        </ResponsiveContainer>
+      </CardContent>
+    </Card>
+  );
 
   if (!userEmail || loading) return <p className="p-6">Loading...</p>;
   if (error) return <p className="p-6 text-red-500">Error: {error}</p>;
 
   return (
     <Sidebar role="admin" email={userEmail}>
-      <div className="text-black p-6 bg-white rounded-2xl shadow-lg">
-        <h1 className="text-3xl font-bold text-[#1F2163] mb-6">Admin Dashboard</h1>
+      <div className="p-6 bg-white rounded-2xl shadow-lg">
+        <h1 className="text-3xl font-bold text-[#1F2163] mb-4">Admin Dashboard</h1>
 
-        {agreementData.length === 0 ? (
-          <p>No agreements found.</p>
-        ) : (
-          <div className="flex flex-col gap-8">
-            {/* Chart + Summary */}
-            <div className="flex flex-col lg:flex-row gap-6">
-              <div className="w-full lg:w-5/6 h-[400px] bg-white p-4 rounded-2xl shadow-md border border-gray-100">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart
-                    data={agreementData}
-                    margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
-                  >
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis
-                      dataKey="university"
-                      interval={0}
-                      height={60}
-                      tick={<CustomizedTick />}
-                    />
-                    <YAxis />
-                    <Tooltip 
-                      formatter={(value, name) => [
-                        value, 
-                        name === 'agreements' ? 'Agreements' : 'Activities'
-                      ]}
-                    />
-                    <Legend />
-                    <Bar 
-                      dataKey="agreements" 
-                      fill="#a0c4ff" 
-                      radius={[8, 8, 0, 0]} 
-                      name="Agreements" 
-                    />
-                    <Bar 
-                      dataKey="activities" 
-                      fill="#ffd6a5" 
-                      radius={[8, 8, 0, 0]} 
-                      name="Activities" 
-                    />
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
+        {/* Filters */}
+        <div className="mb-6 flex flex-wrap gap-3">
+          {['all', 'mobility', 'joint', 'coTeaching'].map((key) => (
+            <button
+              key={key}
+              className={`px-4 py-2 rounded-full text-white font-semibold ${
+                selectedFilter === key ? 'bg-[#1F2163]' : 'bg-gray-400'
+              }`}
+              onClick={() => setSelectedFilter(key)}
+            >
+              {{
+                all: 'All Activities',
+                mobility: 'Mobility Data by Year',
+                joint: 'Joint Research Publication by Year',
+                coTeaching: 'Co-Teaching and Joint Supervision by Year'
+              }[key]}
+            </button>
+          ))}
+        </div>
 
-              <div className="w-full lg:w-1/6 flex flex-col gap-4">
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="text-[#1F2163]">Total Agreements</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <p className="text-3xl font-bold text-[#3A86FF]">{totalAgreements}</p>
-                    <p className="text-sm text-gray-500 mt-1">{agreementData.length} universities</p>
-                  </CardContent>
-                </Card>
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="text-[#1F2163]">Total Activities</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <p className="text-3xl font-bold text-[#FF9F1C]">{totalActivities}</p>
-                    <p className="text-sm text-gray-500 mt-1">Across all agreements</p>
-                  </CardContent>
-                </Card>
-              </div>
+        {/* Graphs and Summary */}
+        {selectedFilter === 'all' && (
+          <div className="flex flex-col gap-6 items-center" >
+          
+            <div className="flex flex-col md:flex-row gap-6 w-full justify-center">
+              {renderChart("Mobility Data by Year", mobilityData, [
+                <Bar key="students" dataKey="students" fill="#C599B6" name="Students" radius={[8, 8, 0, 0]} barSize={70}/>,
+                <Bar key="staff" dataKey="staff" fill="#FAD0C4" name="Staff" radius={[8, 8, 0, 0]} barSize={70}/>
+              ])}
+               {renderChart("Joint Research & Publication by Year", jointData, [
+              <Bar key="joint_research" dataKey="joint_research" fill="#89A8B2" name="Joint Research" radius={[8, 8, 0, 0]} barSize={70}/>,
+              <Bar key="joint_publication" dataKey="joint_publication" fill="#F1F0E8" name="Joint Publication" radius={[8, 8, 0, 0]} barSize={70}/>
+            ])}
             </div>
-
-            {/* Recent Agreements Table */}
-            <div className="bg-white rounded-2xl shadow-md p-6 border border-gray-200">
-              <h2 className="text-xl font-semibold mb-4 text-[#1F2163]">Recent Agreements</h2>
-              <Table>
-                <TableHeader>
-                  <TableRow className="bg-[#f3f4f6] text-[#1F2163]">
-                    <TableHead className="font-semibold">University</TableHead>
-                    <TableHead className="font-semibold">Agreement Type</TableHead>
-                    <TableHead className="font-semibold">Start Date</TableHead>
-                    <TableHead className="font-semibold">End Date</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {recentAgreements.map((item, idx) => (
-                    <TableRow key={idx} className="hover:bg-gray-50">
-                      <TableCell>{item.university}</TableCell>
-                      <TableCell>{item.agreement_type}</TableCell>
-                      <TableCell>
-                        {new Date(item.start_date).toLocaleDateString('en-MY', {
-                          day: 'numeric',
-                          month: 'long',
-                          year: 'numeric',
-                        })}
-                      </TableCell>
-                      <TableCell>
-                        {new Date(item.end_date).toLocaleDateString('en-MY', {
-                          day: 'numeric',
-                          month: 'long',
-                          year: 'numeric',
-                        })}
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+            <div className="flex flex-col md:flex-row gap-6 w-full justify-center">
+              {renderChart("Co-Teaching & Joint Supervision by Year", coTeachingData, [
+                <Bar key="co_teaching" dataKey="co_teaching" fill="#D29F80" name="Co-Teaching" radius={[8, 8, 0, 0]} barSize={70}/>,
+                <Bar key="joint_supervision" dataKey="joint_supervision" fill="#735557" name="Joint Supervision" radius={[8, 8, 0, 0]} barSize={70}/>
+              ])}
             </div>
           </div>
+        )}
+
+        {selectedFilter === 'mobility' && (
+          <div className="items-center">
+            {renderChart("Mobility Data by Year", mobilityData, [
+              <Bar key="students" dataKey="students" fill="#C599B6" name="Students" radius={[8, 8, 0, 0]} barSize={70} />,
+              <Bar key="staff" dataKey="staff" fill="#FAD0C4" name="Staff" radius={[8, 8, 0, 0]} barSize={70}/>
+            ])}
+            {mobilityCards}
+          </div>
+        )}
+
+        {selectedFilter === 'joint' && (
+          <>
+            {renderChart("Joint Research & Publication by Year", jointData, [
+              <Bar key="joint_research" dataKey="joint_research" fill="#89A8B2" name="Joint Research" radius={[8, 8, 0, 0]} barSize={70}/>,
+              <Bar key="joint_publication" dataKey="joint_publication" fill="#F1F0E8" name="Joint Publication" radius={[8, 8, 0, 0]} barSize={70}/>
+            ])}
+            {jointCards}
+          </>
+        )}
+
+        {selectedFilter === 'coTeaching' && (
+          <>
+            {renderChart("Co-Teaching & Joint Supervision by Year", coTeachingData, [
+              <Bar key="co_teaching" dataKey="co_teaching" fill="#D29F80" name="Co-Teaching" radius={[8, 8, 0, 0]} barSize={70}/>,
+              <Bar key="joint_supervision" dataKey="joint_supervision" fill="#735557" name="Joint Supervision" radius={[8, 8, 0, 0]} barSize={70}/>
+            ])}
+            {coteachingsuperCards}
+          </>
         )}
       </div>
     </Sidebar>
