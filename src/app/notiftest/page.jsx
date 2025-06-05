@@ -12,6 +12,23 @@ export default function NotifTest() {
   const [role, setRole] = useState('');
   const [hasSentEmails, setHasSentEmails] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  // 调试函数 - 打印关键状态
+  const debugState = () => {
+    console.log('Current state:', {
+      email,
+      role,
+      notifications,
+      readIds: [...readIds],
+      hasSentEmails,
+      loading
+    });
+  };
+
+  useEffect(() => {
+    debugState(); // 调试状态
+  }, [notifications, readIds, email, role]);
 
   async function sendEmailNotification(to, subject, html) {
     try {
@@ -21,9 +38,8 @@ export default function NotifTest() {
 
       if (error) {
         console.error('Failed to send email:', error.message);
-      } else {
-        console.log('Email sent successfully:', data);
       }
+      return data;
     } catch (error) {
       console.error('Error sending email:', error);
     }
@@ -36,6 +52,7 @@ export default function NotifTest() {
         
         if (authError || !user) {
           setLoading(false);
+          setError('User not authenticated');
           return;
         }
 
@@ -49,9 +66,13 @@ export default function NotifTest() {
 
         if (data) {
           setRole(data.role);
+        } else if (error) {
+          console.error('Role fetch error:', error);
         }
       } catch (err) {
         setLoading(false);
+        setError('Failed to fetch user info');
+        console.error('User info error:', err);
       }
     }
 
@@ -63,7 +84,12 @@ export default function NotifTest() {
 
     const storedRead = localStorage.getItem(`readNotifications-${email}`);
     if (storedRead) {
-      setReadIds(new Set(JSON.parse(storedRead)));
+      try {
+        setReadIds(new Set(JSON.parse(storedRead)));
+      } catch (e) {
+        console.error('Failed to parse read notifications:', e);
+        localStorage.removeItem(`readNotifications-${email}`);
+      }
     }
   }, [email]);
 
@@ -73,33 +99,44 @@ export default function NotifTest() {
     async function fetchNotifications() {
       try {
         setLoading(true);
+        setError(null);
         const today = new Date();
         today.setHours(0, 0, 0, 0);
         
-        const { data: agreements, error } = await supabase
+        // 1. 获取所有协议数据
+        const { data: agreements, error: agreementsError } = await supabase
           .from('agreements_2')
           .select('id, end_date, agreement_type, abbreviation, university')
           .order('end_date', { ascending: true });
 
-        if (error) {
-          setLoading(false);
-          return;
+        if (agreementsError) {
+          throw new Error(`Agreements fetch failed: ${agreementsError.message}`);
         }
+
+        console.log('Fetched agreements:', agreements); // 调试
         
+        // 2. 处理通知生成逻辑
         const notes = [];
         const now = new Date();
+        const oneMonthLater = new Date(now);
+        oneMonthLater.setMonth(now.getMonth() + 1);
+        const sixMonthsLater = new Date(now);
+        sixMonthsLater.setMonth(now.getMonth() + 6);
 
         agreements.forEach(ag => {
-          if (!ag.end_date) return;
+          if (!ag.end_date) {
+            console.warn('Agreement missing end_date:', ag.id);
+            return;
+          }
 
           const endDate = new Date(ag.end_date);
+          if (isNaN(endDate.getTime())) {
+            console.error('Invalid end date:', ag.end_date);
+            return;
+          }
           endDate.setHours(0, 0, 0, 0);
           
-          const timeDiff = endDate.getTime() - now.getTime();
-          const daysDiff = Math.ceil(timeDiff / (1000 * 60 * 60 * 24));
-
-          // 跳过已过期的协议
-          if (daysDiff <= 0) return;
+          const daysDiff = Math.ceil((endDate - now) / (1000 * 60 * 60 * 24));
 
           const base = {
             id: ag.id,
@@ -111,11 +148,14 @@ export default function NotifTest() {
             days_remaining: daysDiff
           };
 
-          if (daysDiff <= 30) {
+          // 3. 根据到期时间生成通知
+          if (daysDiff <= 0) {
+            // 已过期 - 现在跳过
+          } else if (daysDiff <= 30) {
             notes.push({
               ...base,
               type: '1-month',
-              title: `${ag.abbreviation} Agreement Expiring Soon`,
+              title: `${ag.abbreviation} Agreement Expiring Soon (${daysDiff} days)`,
               message: `${ag.university} ${ag.agreement_type} agreement expires on ${base.end_date}`,
               priority: 1
             });
@@ -123,29 +163,33 @@ export default function NotifTest() {
             notes.push({
               ...base,
               type: '6-month',
-              title: `${ag.abbreviation} Agreement Expiring`,
+              title: `${ag.abbreviation} Agreement Expiring (in ${Math.floor(daysDiff/30)} months)`,
               message: `${ag.university} ${ag.agreement_type} agreement expires on ${base.end_date}`,
               priority: 2
             });
           }
         });
 
-        // Sort by days remaining (soonest first)
+        // 4. 排序通知
         const sortedNotes = notes.sort((a, b) => a.days_remaining - b.days_remaining);
+        console.log('Generated notifications:', sortedNotes); // 调试
 
         setNotifications(sortedNotes);
-        setLoading(false);
 
-        // Send emails for unread notifications
-        for (const note of sortedNotes) {
-          const key = note.id + '-' + note.type;
+        // 5. 发送未读通知邮件
+        const sendPromises = sortedNotes.map(async note => {
+          const key = `${note.id}-${note.type}`;
           if (!readIds.has(key)) {
-            await sendEmailNotification(email, note.title, note.message);
+            await sendEmailNotification(email, note.title, `<p>${note.message}</p>`);
           }
-        }
+        });
 
+        await Promise.all(sendPromises);
         setHasSentEmails(true);
       } catch (err) {
+        console.error('Notification fetch error:', err);
+        setError(err.message || 'Failed to load notifications');
+      } finally {
         setLoading(false);
       }
     }
@@ -165,7 +209,7 @@ export default function NotifTest() {
   };
 
   const visibleNotifications = notifications.filter(n => {
-    const key = n.id + '-' + n.type;
+    const key = `${n.id}-${n.type}`;
     return selectedTab === 'unread' ? !readIds.has(key) : readIds.has(key);
   });
 
@@ -173,6 +217,12 @@ export default function NotifTest() {
     <Sidebar role={role} email={email}>
       <div className="p-4 max-w-4xl mx-auto font-sans">
         <h1 className="text-2xl font-bold mb-4">Notification Center</h1>
+        
+        {error && (
+          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
+            Error: {error}
+          </div>
+        )}
 
         <div className="flex mb-4">
           <button
@@ -196,11 +246,17 @@ export default function NotifTest() {
         {loading ? (
           <p>Loading notifications...</p>
         ) : visibleNotifications.length === 0 ? (
-          <p>No {selectedTab} notifications.</p>
+          <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4">
+            <p className="text-yellow-700">
+              {selectedTab === 'unread' 
+                ? "No unread notifications. All agreements are up to date!"
+                : "No read notifications yet."}
+            </p>
+          </div>
         ) : (
           <ul className="space-y-3">
             {visibleNotifications.map(note => {
-              const readKey = note.id + '-' + note.type;
+              const readKey = `${note.id}-${note.type}`;
               const isRead = readIds.has(readKey);
               const isUrgent = note.days_remaining <= 30;
 
@@ -223,12 +279,12 @@ export default function NotifTest() {
                         {note.title}
                       </strong>
                       <p className="mt-1">{note.message}</p>
-                      <p className="text-sm mt-1">
-                        Ends: {note.end_date} • 
-                        <span className={`ml-1 ${isUrgent ? 'font-bold text-red-600' : 'text-gray-500'}`}>
+                      <div className="flex items-center mt-1 text-sm">
+                        <span>Ends: {note.end_date}</span>
+                        <span className={`ml-2 ${isUrgent ? 'font-bold text-red-600' : 'text-gray-500'}`}>
                           {note.days_remaining} days remaining
                         </span>
-                      </p>
+                      </div>
                     </div>
                   </div>
                 </li>
