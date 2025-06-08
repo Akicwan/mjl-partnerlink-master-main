@@ -222,87 +222,259 @@ export default function AdminDashboard() {
     </Card>
   );
 
-  if (!userEmail || loading) return <p className="p-6">Loading...</p>;
-  if (error) return <p className="p-6 text-red-500">Error: {error}</p>;
+  if (!userEmail || loading) return (
+    <div className="flex justify-center items-center h-screen">
+      <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#1F2163]"></div>
+    </div>
+  );
+  
+  if (error) return (
+    <div className="flex justify-center items-center h-screen">
+      <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
+        Error: {error}
+      </div>
+    </div>
+  );
 
   return (
     <Sidebar role="admin" email={userEmail}>
-      <div className="p-6 bg-white rounded-2xl shadow-lg">
-        <h1 className="text-3xl font-bold text-[#1F2163] mb-4">Admin Dashboard</h1>
+      <div className="p-6">
+        {/* Gradient Header */}
+        <div className="bg-gradient-to-r from-[#1F2163] to-[#161A42] p-8 rounded-xl shadow-lg mb-8">
+          <h1 className="text-3xl font-bold text-white">Admin Dashboard</h1>
+          <p className="text-blue-100 mt-2">Comprehensive overview of partnership activities</p>
+        </div>
 
-        {/* Filters */}
-        <div className="mb-6 flex flex-wrap gap-3">
+        {/* Filter Buttons */}
+        <div className="flex flex-wrap gap-3 mb-8">
           {['all', 'mobility', 'joint', 'coTeaching'].map((key) => (
             <button
               key={key}
-              className={`px-4 py-2 rounded-full text-white font-semibold ${
-                selectedFilter === key ? 'bg-[#1F2163]' : 'bg-gray-400'
+              className={`px-6 py-2 rounded-full font-medium transition-all ${
+                selectedFilter === key 
+                  ? 'bg-[#1F2163] text-white shadow-md' 
+                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
               }`}
               onClick={() => setSelectedFilter(key)}
             >
               {{
                 all: 'All Activities',
-                mobility: 'Mobility Data by Year',
-                joint: 'Joint Research Publication by Year',
-                coTeaching: 'Co-Teaching and Joint Supervision by Year'
+                mobility: 'Mobility Data',
+                joint: 'Research & Publications',
+                coTeaching: 'Teaching & Supervision'
               }[key]}
             </button>
           ))}
         </div>
 
-        {/* Graphs and Summary */}
-        {selectedFilter === 'all' && (
-          <div className="flex flex-col gap-6 items-center" >
-          
-            <div className="flex flex-col md:flex-row gap-6 w-full justify-center">
-              {renderChart("Mobility Data by Year", mobilityData, [
-                <Bar key="students" dataKey="students" fill="#C599B6" name="Students" radius={[8, 8, 0, 0]} barSize={70}/>,
-                <Bar key="staff" dataKey="staff" fill="#FAD0C4" name="Staff" radius={[8, 8, 0, 0]} barSize={70}/>
-              ])}
-               {renderChart("Joint Research & Publication by Year", jointData, [
-              <Bar key="joint_research" dataKey="joint_research" fill="#89A8B2" name="Joint Research" radius={[8, 8, 0, 0]} barSize={70}/>,
-              <Bar key="joint_publication" dataKey="joint_publication" fill="#F1F0E8" name="Joint Publication" radius={[8, 8, 0, 0]} barSize={70}/>
-            ])}
+        {/* Dashboard Content */}
+        <div className="space-y-8">
+          {/* All Activities View */}
+          {selectedFilter === 'all' && (
+  <>
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+      <StatCard 
+        title="Total Agreements" 
+        value={totalAgreements} 
+        icon="📋"
+        color="bg-blue-100 text-blue-800"
+      />
+      <StatCard 
+        title="Total Student Mobility" 
+        value={totalStudents} 
+        icon="👨‍🎓"
+        color="bg-purple-100 text-purple-800"
+      />
+      <StatCard 
+        title="Total Staff Mobility" 
+        value={totalStaff} 
+        icon="👩‍🏫"
+        color="bg-pink-100 text-pink-800"
+      />
+      <StatCard 
+        title="Joint Research" 
+        value={totalJointResearch} 
+        icon="🔬"
+        color="bg-teal-100 text-teal-800"
+      />
+      <StatCard 
+        title="Joint Publications" 
+        value={totalJointPublication} 
+        icon="📄"
+        color="bg-indigo-100 text-indigo-800"
+      />
+      <StatCard 
+        title="Co-Teaching" 
+        value={totalCoTeaching} 
+        icon="👩‍🏫"
+        color="bg-orange-100 text-orange-800"
+      />
+      <StatCard 
+        title="Joint Supervision" 
+        value={totalJointSupervision} 
+        icon="👨‍⚖️"
+        color="bg-amber-100 text-amber-800"
+      />
+    </div>
+
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+      <ChartCard 
+        title="Mobility Data by Year"
+        data={mobilityData}
+        bars={[
+          <Bar key="students" dataKey="students" fill="#8B5FBF" name="Students" radius={[4, 4, 0, 0]}/>,
+          <Bar key="staff" dataKey="staff" fill="#FF9A8B" name="Staff" radius={[4, 4, 0, 0]}/>
+        ]}
+      />
+      <ChartCard 
+        title="Joint Research & Publication"
+        data={jointData}
+        bars={[
+          <Bar key="joint_research" dataKey="joint_research" fill="#4E8098" name="Research" radius={[4, 4, 0, 0]}/>,
+          <Bar key="joint_publication" dataKey="joint_publication" fill="#90C2E7" name="Publications" radius={[4, 4, 0, 0]}/>
+        ]}
+      />
+    </div>
+
+    <div className="grid grid-cols-1 gap-8">
+      <ChartCard 
+        title="Co-Teaching & Joint Supervision"
+        data={coTeachingData}
+        bars={[
+          <Bar key="co_teaching" dataKey="co_teaching" fill="#D4A59A" name="Co-Teaching" radius={[4, 4, 0, 0]}/>,
+          <Bar key="joint_supervision" dataKey="joint_supervision" fill="#7D5A5A" name="Supervision" radius={[4, 4, 0, 0]}/>
+        ]}
+      />
+    </div>
+  </>
+)}
+
+          {/* Mobility View */}
+          {selectedFilter === 'mobility' && (
+            <div className="space-y-8">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <StatCard 
+                  title="Total Student Mobility" 
+                  value={totalStudents} 
+                  icon="👨‍🎓"
+                  color="bg-purple-100 text-purple-800"
+                />
+                <StatCard 
+                  title="Total Staff Mobility" 
+                  value={totalStaff} 
+                  icon="👩‍🏫"
+                  color="bg-pink-100 text-pink-800"
+                />
+              </div>
+              <ChartCard 
+                title="Mobility Data by Year"
+                data={mobilityData}
+                bars={[
+                  <Bar key="students" dataKey="students" fill="#8B5FBF" name="Students" radius={[4, 4, 0, 0]}/>,
+                  <Bar key="staff" dataKey="staff" fill="#FF9A8B" name="Staff" radius={[4, 4, 0, 0]}/>
+                ]}
+              />
             </div>
-            <div className="flex flex-col md:flex-row gap-6 w-full justify-center">
-              {renderChart("Co-Teaching & Joint Supervision by Year", coTeachingData, [
-                <Bar key="co_teaching" dataKey="co_teaching" fill="#D29F80" name="Co-Teaching" radius={[8, 8, 0, 0]} barSize={70}/>,
-                <Bar key="joint_supervision" dataKey="joint_supervision" fill="#735557" name="Joint Supervision" radius={[8, 8, 0, 0]} barSize={70}/>
-              ])}
+          )}
+
+          {/* Joint Research View */}
+          {selectedFilter === 'joint' && (
+            <div className="space-y-8">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <StatCard 
+                  title="Joint Research" 
+                  value={totalJointResearch} 
+                  icon="🔬"
+                  color="bg-teal-100 text-teal-800"
+                />
+                <StatCard 
+                  title="Joint Publications" 
+                  value={totalJointPublication} 
+                  icon="📄"
+                  color="bg-blue-100 text-blue-800"
+                />
+              </div>
+              <ChartCard 
+                title="Joint Research & Publication"
+                data={jointData}
+                bars={[
+                  <Bar key="joint_research" dataKey="joint_research" fill="#4E8098" name="Research" radius={[4, 4, 0, 0]}/>,
+                  <Bar key="joint_publication" dataKey="joint_publication" fill="#90C2E7" name="Publications" radius={[4, 4, 0, 0]}/>
+                ]}
+              />
             </div>
-          </div>
-        )}
+          )}
 
-        {selectedFilter === 'mobility' && (
-          <div className="items-center">
-            {renderChart("Mobility Data by Year", mobilityData, [
-              <Bar key="students" dataKey="students" fill="#C599B6" name="Students" radius={[8, 8, 0, 0]} barSize={70} />,
-              <Bar key="staff" dataKey="staff" fill="#FAD0C4" name="Staff" radius={[8, 8, 0, 0]} barSize={70}/>
-            ])}
-            {mobilityCards}
-          </div>
-        )}
-
-        {selectedFilter === 'joint' && (
-          <>
-            {renderChart("Joint Research & Publication by Year", jointData, [
-              <Bar key="joint_research" dataKey="joint_research" fill="#89A8B2" name="Joint Research" radius={[8, 8, 0, 0]} barSize={70}/>,
-              <Bar key="joint_publication" dataKey="joint_publication" fill="#F1F0E8" name="Joint Publication" radius={[8, 8, 0, 0]} barSize={70}/>
-            ])}
-            {jointCards}
-          </>
-        )}
-
-        {selectedFilter === 'coTeaching' && (
-          <>
-            {renderChart("Co-Teaching & Joint Supervision by Year", coTeachingData, [
-              <Bar key="co_teaching" dataKey="co_teaching" fill="#D29F80" name="Co-Teaching" radius={[8, 8, 0, 0]} barSize={70}/>,
-              <Bar key="joint_supervision" dataKey="joint_supervision" fill="#735557" name="Joint Supervision" radius={[8, 8, 0, 0]} barSize={70}/>
-            ])}
-            {coteachingsuperCards}
-          </>
-        )}
+          {/* Co-Teaching View */}
+          {selectedFilter === 'coTeaching' && (
+            <div className="space-y-8">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <StatCard 
+                  title="Co-Teaching" 
+                  value={totalCoTeaching} 
+                  icon="👩‍🏫"
+                  color="bg-orange-100 text-orange-800"
+                />
+                <StatCard 
+                  title="Joint Supervision" 
+                  value={totalJointSupervision} 
+                  icon="👨‍⚖️"
+                  color="bg-amber-100 text-amber-800"
+                />
+              </div>
+              <ChartCard 
+                title="Co-Teaching & Joint Supervision"
+                data={coTeachingData}
+                bars={[
+                  <Bar key="co_teaching" dataKey="co_teaching" fill="#D4A59A" name="Co-Teaching" radius={[4, 4, 0, 0]}/>,
+                  <Bar key="joint_supervision" dataKey="joint_supervision" fill="#7D5A5A" name="Supervision" radius={[4, 4, 0, 0]}/>
+                ]}
+              />
+            </div>
+          )}
+        </div>
       </div>
     </Sidebar>
+  );
+}
+
+// Reusable Stat Card Component
+function StatCard({ title, value, icon, color }) {
+  return (
+    <div className={`p-6 rounded-xl shadow-sm ${color} flex items-center`}>
+      <div className="text-3xl mr-4">{icon}</div>
+      <div>
+        <h3 className="text-sm font-medium">{title}</h3>
+        <p className="text-2xl font-bold">{value}</p>
+      </div>
+    </div>
+  );
+}
+
+// Reusable Chart Card Component
+function ChartCard({ title, data, bars }) {
+  return (
+    <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+      <h3 className="text-lg font-semibold text-[#1F2163] mb-4">{title}</h3>
+      <div className="h-[400px]">
+        <ResponsiveContainer width="100%" height="100%">
+          <BarChart data={data}>
+            <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+            <XAxis dataKey="year" stroke="#888" />
+            <YAxis stroke="#888" />
+            <Tooltip 
+              contentStyle={{
+                backgroundColor: '#fff',
+                border: '1px solid #eee',
+                borderRadius: '8px',
+                boxShadow: '0 2px 10px rgba(0,0,0,0.1)'
+              }}
+            />
+            <Legend />
+            {bars}
+          </BarChart>
+        </ResponsiveContainer>
+      </div>
+    </div>
   );
 }
