@@ -116,73 +116,83 @@ export default function AddUserPage() {
     setMessage('');
   };
 
-  if (!userEmail) return <div className="p-6">Loading...</div>;
+  if (!userEmail) return <div className="p-6 flex justify-center"><div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-[#1F2163]"></div></div>;
 
   return (
     <Sidebar role="admin" email={userEmail}>
-      <div className="p-8">
+      <div className="p-6">
         <div className="max-w-6xl mx-auto">
-          <div className="flex justify-between items-center mb-8">
-            <h2 className="text-2xl font-bold text-[#1F2163]">Manage Users</h2>
-            <button
-              onClick={() => {
-                resetForm();
-                setShowForm(!showForm);
-              }}
-              className="bg-[#D9AC42] text-white px-4 py-2 rounded-lg hover:bg-[#c3932d] transition-colors"
-            >
-              {showForm ? 'Close' : 'Add User'}
-            </button>
+          {/* Header with Gradient Background */}
+          <div className="bg-gradient-to-r from-[#1F2163] to-[#161A42] p-6 rounded-xl shadow-lg mb-8">
+            <div className="flex justify-between items-center">
+              <div>
+                <h2 className="text-2xl font-bold text-white">User Management</h2>
+                <p className="text-blue-100 mt-1">Manage admin and partner user accounts</p>
+              </div>
+              <button
+                onClick={() => {
+                  resetForm();
+                  setShowForm(!showForm);
+                }}
+                className="bg-white text-[#1F2163] px-4 py-2 rounded-lg hover:bg-gray-100 transition-colors font-medium"
+              >
+                {showForm ? 'Close Form' : '+ Add User'}
+              </button>
+            </div>
           </div>
 
-          <div className="flex border-b border-gray-200 mb-6">
+          {/* Role Filter Tabs */}
+          <div className="flex border-b border-gray-200 mb-8">
             <button
-              className={`px-4 py-2 font-medium ${filterRole === 'partner' ? 'text-[#1F2163] border-b-2 border-[#1F2163]' : 'text-gray-500'}`}
+              className={`px-6 py-3 font-medium text-sm ${filterRole === 'partner' ? 'text-[#1F2163] border-b-2 border-[#1F2163]' : 'text-gray-500 hover:text-gray-700'}`}
               onClick={() => setFilterRole('partner')}
             >
               Partner PICs
             </button>
             <button
-              className={`px-4 py-2 font-medium ${filterRole === 'admin' ? 'text-[#1F2163] border-b-2 border-[#1F2163]' : 'text-gray-500'}`}
+              className={`px-6 py-3 font-medium text-sm ${filterRole === 'admin' ? 'text-[#1F2163] border-b-2 border-[#1F2163]' : 'text-gray-500 hover:text-gray-700'}`}
               onClick={() => setFilterRole('admin')}
             >
-              Admins
+              Admin Users
             </button>
           </div>
 
+          {/* User Form */}
           {showForm && (
-            <div className="bg-gray-100 p-6 rounded-lg shadow-md mb-8">
-              <h3 className="text-lg font-semibold mb-4 text-[#1F2163]">
-                {editingUser ? 'Edit User' : 'Add New User'}
+            <div className="bg-white p-6 rounded-xl shadow-md mb-8 border border-gray-200">
+              <h3 className="text-xl font-semibold mb-4 text-[#1F2163]">
+                {editingUser ? 'Edit User' : 'Create New User'}
               </h3>
               <form onSubmit={handleSubmit} className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Email Address</label>
                     <input
                       type="email"
                       required
-                      className="w-full p-2 rounded border border-gray-300 bg-white"
+                      className="w-full p-3 rounded-lg border border-gray-300 bg-white focus:ring-2 focus:ring-[#D9AC42] focus:border-[#D9AC42] transition-all"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
+                      placeholder="user@university.edu"
                     />
                   </div>
 
                   {!editingUser && (
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Password</label>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Password</label>
                       <div className="relative">
                         <input
                           type={showPassword ? 'text' : 'password'}
                           required
-                          className="w-full p-2 rounded border border-gray-300 bg-white"
+                          className="w-full p-3 rounded-lg border border-gray-300 bg-white focus:ring-2 focus:ring-[#D9AC42] focus:border-[#D9AC42] transition-all"
                           value={password}
                           onChange={(e) => setPassword(e.target.value)}
+                          placeholder="••••••••"
                         />
                         <button
                           type="button"
                           onClick={() => setShowPassword(!showPassword)}
-                          className="absolute right-2 top-2 text-sm text-gray-600"
+                          className="absolute right-3 top-3 text-sm text-gray-600 hover:text-gray-800"
                         >
                           {showPassword ? 'Hide' : 'Show'}
                         </button>
@@ -192,83 +202,101 @@ export default function AddUserPage() {
 
                   {filterRole === 'partner' && (
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">University</label>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">University</label>
                       <input
                         type="text"
-                        className="w-full p-2 rounded border border-gray-300 bg-white"
+                        className="w-full p-3 rounded-lg border border-gray-300 bg-white focus:ring-2 focus:ring-[#D9AC42] focus:border-[#D9AC42] transition-all"
                         value={university}
                         onChange={(e) => setUniversity(e.target.value)}
                         required={role === 'partner'}
+                        placeholder="University Name"
                       />
                     </div>
                   )}
                 </div>
 
-                <div className="flex justify-end gap-3 pt-2">
+                <div className="flex justify-end gap-3 pt-4">
                   <button
                     type="button"
                     onClick={resetForm}
-                    className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
+                    className="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
                   >
                     Cancel
                   </button>
                   <button
                     type="submit"
-                    className="px-4 py-2 bg-[#1F2163] text-white rounded-md hover:bg-[#0F1153]"
+                    className="px-6 py-2 bg-[#1F2163] text-white rounded-lg hover:bg-[#0F1153] transition-colors font-medium"
                   >
                     {editingUser ? 'Update User' : 'Create User'}
                   </button>
                 </div>
-                {message && <p className="text-sm text-green-700 mt-2">{message}</p>}
+                {message && (
+                  <p className={`text-sm mt-3 p-3 rounded-lg ${message.includes('success') ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                    {message}
+                  </p>
+                )}
               </form>
             </div>
           )}
 
-          <div className="bg-white rounded-lg shadow overflow-hidden">
+          {/* Users Table */}
+          <div className="bg-white rounded-xl shadow-sm overflow-hidden border border-gray-200">
             {filteredUsers.length === 0 ? (
-              <div className="p-6 text-center text-gray-500">
-                No {filterRole === 'partner' ? 'Partner PICs' : 'Admins'} found
+              <div className="p-8 text-center">
+                <p className="text-gray-500 text-lg">
+                  No {filterRole === 'partner' ? 'Partner PICs' : 'Admin Users'} found
+                </p>
+                <button
+                  onClick={() => setShowForm(true)}
+                  className="mt-4 bg-[#1F2163] text-white px-4 py-2 rounded-lg hover:bg-[#0F1153] transition-colors"
+                >
+                  Add {filterRole === 'partner' ? 'Partner PIC' : 'Admin User'}
+                </button>
               </div>
             ) : (
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
-                    {filterRole === 'partner' && (
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">University</th>
-                    )}
-                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {filteredUsers.map((user) => (
-                    <tr key={user.id}>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {user.email}
-                      </td>
+              <div className="overflow-x-auto">
+                <table className="min-w-full divide-y divide-gray-200">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="px-6 py-4 text-left text-l font-medium text-gray-500 uppercase tracking-wider">Email</th>
                       {filterRole === 'partner' && (
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                          {user.university || '-'}
-                        </td>
+                        <th className="px-6 py-4 text-left text-l font-medium text-gray-500 uppercase tracking-wider">University</th>
                       )}
-                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                        <button
-                          onClick={() => handleEdit(user)}
-                          className="text-[#1F2163] hover:text-[#0F1153] mr-4"
-                        >
-                          Edit
-                        </button>
-                        <button
-                          onClick={() => handleDelete(user.id)}
-                          className="text-red-600 hover:text-red-900"
-                        >
-                          Delete
-                        </button>
-                      </td>
+                      <th className="px-6 py-4 text-right text-l font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {filteredUsers.map((user) => (
+                      <tr key={user.id} className="hover:bg-gray-50 transition-colors">
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="text-sm font-medium text-gray-900">{user.email}</div>
+                        </td>
+                        {filterRole === 'partner' && (
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div className="text-sm text-gray-600">
+                              {user.university || <span className="text-gray-400">-</span>}
+                            </div>
+                          </td>
+                        )}
+                        <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                          <button
+                            onClick={() => handleEdit(user)}
+                            className="text-[#1F2163] hover:text-[#0F1153] mr-6 font-medium hover:underline"
+                          >
+                            Edit
+                          </button>
+                          <button
+                            onClick={() => handleDelete(user.id)}
+                            className="text-red-600 hover:text-red-800 font-medium hover:underline"
+                          >
+                            Delete
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             )}
           </div>
         </div>

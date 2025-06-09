@@ -190,130 +190,161 @@ if (['Co-Teaching', 'Staff Mobility', 'Joint Supervision', 'Joint Research'].inc
     ([university]) => university.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  if (!userEmail || loading) return <div className="p-6">Loading...</div>;
+  if (!userEmail || loading) return (
+    <div className="flex justify-center items-center h-screen">
+      <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#1F2163]"></div>
+    </div>
+  );
 
-   return (
+  return (
     <Sidebar role="admin" email={userEmail}>
-      <div className="text-black p-6 bg-white rounded-2xl shadow-lg">
-        <div className="flex justify-between items-center mb-6">
-          <h1 className="text-3xl font-bold text-[#1F2163]">University Agreements</h1>
-        </div>
-
-        {lastDeleted && (
-          <div className="mb-4 p-4 bg-yellow-100 text-yellow-800 rounded flex justify-between items-center">
-            <span>Agreement deleted.</span>
-            <button
-              onClick={handleUndo}
-              className="ml-4 px-3 py-1 bg-yellow-600 text-white rounded hover:bg-yellow-700"
-            >
-              Undo
-            </button>
+      <div className="p-6">
+        <div className="max-w-7xl mx-auto">
+          {/* Header with Gradient Background */}
+          <div className="bg-gradient-to-r from-[#1F2163] to-[#161A42] p-6 rounded-xl shadow-lg mb-8">
+            <div className="flex justify-between items-center">
+              <div>
+                <h1 className="text-2xl font-bold text-white">University Agreements</h1>
+                <p className="text-blue-100 mt-1">Manage all university partnership agreements</p>
+              </div>
+              <div className="relative w-1/2">
+                <input
+                  type="text"
+                  placeholder="🔍 Search universities..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="w-full pl-10 pr-4 py-2 rounded-lg border-0 focus:ring-2 focus:ring-[#D9AC42] bg-white bg-opacity-90 text-gray-800"
+                />
+              </div>
+            </div>
           </div>
-        )}
 
-        <div className="mb-6">
-          <input
-            type="text"
-            placeholder="Search university..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full md:w-1/2 px-4 py-2 border border-gray-300 rounded-lg"
-          />
-        </div>
+          {/* Undo Notification */}
+          {lastDeleted && (
+            <div className="mb-6 p-4 bg-yellow-100 text-yellow-800 rounded-lg shadow-sm flex justify-between items-center">
+              <span>Agreement deleted. You can undo this action.</span>
+              <button
+                onClick={handleUndo}
+                className="ml-4 px-4 py-1 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 text-sm"
+              >
+                Undo
+              </button>
+            </div>
+          )}
 
-        {filteredUniversities.length === 0 && (
-          <div className="text-gray-600">No universities match your search.</div>
-        )}
-
-        {filteredUniversities.map(([university, agreementTypes]) => (
-          <div key={university} className="mb-10 border-b pb-6">
-            <h2 className="text-2xl font-semibold text-[#1F2163] mb-3">{university}</h2>
-            {Object.entries(agreementTypes).map(([type, agreements]) => {
-              const key = `${university}-${type}`;
-              const isOpen = openDropdowns[key];
-              return (
-                <div key={type} className="mb-4">
-                  <button
-                    onClick={() => toggleDropdown(university, type)}
-                    className="text-left w-full flex justify-between items-center bg-gray-100 hover:bg-gray-200 px-4 py-2 rounded shadow"
-                  >
-                    <h3 className="text-lg font-medium text-gray-900">{type}</h3>
-                    <span>{isOpen ? '▲' : '▼'}</span>
-                  </button>
-                  {isOpen && (
-                    <div className="mt-2">
-                      {agreements.map((agreement) => (
-                        <div key={agreement.id} className="mb-4 border border-gray-200 rounded p-4 shadow-sm bg-white">
-                          <ul className="list-disc ml-6">
-                            {renderAttribute('Contacts', agreement.contacts)}
-                            {renderAttribute('JUC Member', agreement.juc_member)}
-                            {renderAttribute('Academic Collaboration', agreement.academic_collab)}
-                            {renderAttribute('Research Collaboration', agreement.research_collab)}
-                            {renderAttribute('Start Date', agreement.start_date)}
-                            {renderAttribute('End Date', agreement.end_date)}
-                            {renderAttribute('i-Kohza', agreement.i_kohza)}
-                            {renderAttribute('PIC MJIIT', agreement.pic_mjiit)}
-                            {renderAttribute('Join Degree / Double Degree', agreement.jd_dd)}
-                            {renderAttribute('Joint Lab', agreement.joint_lab)}
-                            {renderAttribute('Co-Teaching', agreement.co_teaching)}
-                            {renderAttribute('Staff Mobility', agreement.staff_mobility)}
-                            {renderAttribute('Student Mobility', agreement.student_mobility)}
-                            {renderAttribute('Joint Supervision', agreement.joint_supervision)}
-                            {renderAttribute('Joint Publication', agreement.joint_publication)}
-                            {renderAttribute('Others', agreement.others)}
-
-                          </ul>
-                          <div className="flex justify-end mt-4 space-x-2">
-                            <button
-                              onClick={() => handleEditClick(agreement)}
-                              className="px-4 py-1 text-sm bg-blue-500 hover:bg-blue-600 text-white rounded"
-                            >
-                              Edit
-                            </button>
-                            <button
-                              onClick={() => handleDelete(agreement.id)}
-                              className="px-4 py-1 text-sm bg-red-500 hover:bg-red-600 text-white rounded"
-                            >
-                              Delete
-                            </button>
-                          </div>
+          {/* Universities List */}
+          {filteredUniversities.length === 0 ? (
+            <div className="bg-white p-8 rounded-xl shadow text-center">
+              <p className="text-gray-500 text-lg">
+                {searchTerm ? 'No universities match your search' : 'No universities found'}
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-8">
+              {filteredUniversities.map(([university, agreementTypes]) => (
+                <div key={university} className="bg-white rounded-xl shadow-md overflow-hidden">
+                  <div className="p-4 border-b border-gray-200">
+                    <h2 className="text-xl font-semibold text-[#1F2163]">{university}</h2>
+                  </div>
+                  
+                  <div className="divide-y divide-gray-200">
+                    {Object.entries(agreementTypes).map(([type, agreements]) => {
+                      const key = `${university}-${type}`;
+                      const isOpen = openDropdowns[key];
+                      return (
+                        <div key={type} className="p-4">
+                          <button
+                            onClick={() => toggleDropdown(university, type)}
+                            className="w-full flex justify-between items-center text-left"
+                          >
+                            <h3 className="text-lg font-medium text-gray-800">{type}</h3>
+                            <span className="text-gray-500">
+                              {isOpen ? '▲' : '▼'}
+                            </span>
+                          </button>
+                          
+                          {isOpen && (
+                            <div className="mt-4 space-y-4">
+                              {agreements.map((agreement) => (
+                                <div key={agreement.id} className="border border-gray-200 rounded-lg p-4 bg-gray-50">
+                                  <ul className="space-y-2">
+                                    {renderAttribute('Contacts', agreement.contacts)}
+                                    {renderAttribute('JUC Member', agreement.juc_member)}
+                                    {renderAttribute('Academic Collaboration', agreement.academic_collab)}
+                                    {renderAttribute('Research Collaboration', agreement.research_collab)}
+                                    {renderAttribute('Start Date', agreement.start_date)}
+                                    {renderAttribute('End Date', agreement.end_date)}
+                                    {renderAttribute('i-Kohza', agreement.i_kohza)}
+                                    {renderAttribute('PIC MJIIT', agreement.pic_mjiit)}
+                                    {renderAttribute('Join Degree / Double Degree', agreement.jd_dd)}
+                                    {renderAttribute('Joint Lab', agreement.joint_lab)}
+                                    {renderAttribute('Co-Teaching', agreement.co_teaching)}
+                                    {renderAttribute('Staff Mobility', agreement.staff_mobility)}
+                                    {renderAttribute('Student Mobility', agreement.student_mobility)}
+                                    {renderAttribute('Joint Supervision', agreement.joint_supervision)}
+                                    {renderAttribute('Joint Publication', agreement.joint_publication)}
+                                    {renderAttribute('Others', agreement.others)}
+                                  </ul>
+                                  
+                                  <div className="flex justify-end gap-2 mt-4">
+                                    <button
+                                      onClick={() => handleEditClick(agreement)}
+                                      className="px-4 py-2 bg-[#1F2163] text-white rounded-lg hover:bg-[#0F1153] text-sm"
+                                    >
+                                      Edit
+                                    </button>
+                                    <button
+                                      onClick={() => handleDelete(agreement.id)}
+                                      className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 text-sm"
+                                    >
+                                      Delete
+                                    </button>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          )}
                         </div>
-                      ))} 
-                    </div>
-                  )}
+                      );
+                    })}
+                  </div>
                 </div>
-              );
-            })}
-          </div>
-        ))}
+              ))}
+            </div>
+          )}
+        </div>
       </div>
 
-      {/* EDIT MODAL */}
+      {/* Edit Modal */}
       {modalOpen && editAgreement && (
-        <div className="fixed inset-0 min-h-screen bg-gradient-to-b from-[#692B2C] to-[#1F2163] p-4 flex items-center justify-center z-50">
-          <div className="bg-white p-6 rounded-xl shadow-xl max-w-2xl w-full">
-            <h2 className="text-xl font-semibold mb-4">Edit Agreement</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-[60vh] overflow-y-auto">
-
-{[
-  'contacts',
-  'juc_member',
-  'academic_collab',
-  'jd_dd',
-  'joint_lab',
-  'co_teaching',
-  'staff_mobility',
-  'student_mobility',
-  'joint_supervision',
-  'research_collab',  // <-- shown toggle
-  'joint_research',   // <-- appears directly under the toggle
-  'joint_publication',
-  'start_date',
-  'end_date',
-  'i_kohza',
-  'pic_mjiit',
-  'others'
-].map((key) => {
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto">
+            <div className="p-6 border-b border-gray-200">
+              <h2 className="text-xl font-semibold text-[#1F2163]">Edit Agreement</h2>
+            </div>
+            
+            <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Keep all your existing modal content exactly as is */}
+              {[
+                'contacts',
+                'juc_member',
+                'academic_collab',
+                'jd_dd',
+                'joint_lab',
+                'co_teaching',
+                'staff_mobility',
+                'student_mobility',
+                'joint_supervision',
+                'research_collab',
+                'joint_research',
+                'joint_publication',
+                'start_date',
+                'end_date',
+                'i_kohza',
+                'pic_mjiit',
+                'others'
+              ].map((key) => {
+      
   const value = editAgreement[key];
   if (key === 'id') return null;
 
@@ -535,19 +566,19 @@ if (['Co-Teaching', 'Staff Mobility', 'Joint Supervision', 'Joint Research'].inc
 })}
 
             </div>
-            <div className="flex justify-end mt-6 space-x-2">
+            <div className="p-6 border-t border-gray-200 flex justify-end gap-3">
               <button
                 onClick={() => setModalOpen(false)}
-                className="px-4 py-2 bg-gray-300 rounded hover:bg-gray-400"
+                className="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-100"
               >
                 Cancel
               </button>
               <button
                 onClick={handleSave}
                 disabled={saving}
-                className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
+                className="px-6 py-2 bg-[#1F2163] text-white rounded-lg hover:bg-[#0F1153] disabled:opacity-70"
               >
-                {saving ? 'Saving...' : 'Save'}
+                {saving ? 'Saving...' : 'Save Changes'}
               </button>
             </div>
           </div>
