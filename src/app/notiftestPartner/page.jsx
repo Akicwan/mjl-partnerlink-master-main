@@ -178,7 +178,13 @@ export default function PartnerNotification() {
         {loading ? (
           <p>Loading notifications...</p>
         ) : visibleNotifications.length === 0 ? (
-          <p>No {selectedTab} notifications.</p>
+           <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4">
+            <p className="text-yellow-700">
+              {selectedTab === 'unread' 
+                ? "No unread notifications. All agreements are up to date!"
+                : "No read notifications yet."}
+            </p>
+          </div>
         ) : (
           <ul className="space-y-3">
             {visibleNotifications.map((note) => {

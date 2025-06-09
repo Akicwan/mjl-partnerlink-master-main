@@ -74,6 +74,27 @@ const checkboxClasses = "w-4 h-4 text-[#1F2163] border-gray-300 rounded focus:ri
   const updateCoTeaching = (i, f, v) => setCoTeachings(prev => prev.map((c, idx) => idx === i ? { ...c, [f]: v } : c));
   const removeCoTeaching = i => setCoTeachings(prev => prev.filter((_, idx) => idx !== i));
 
+  const clearAllFields = () => {
+  setForm({
+    university: '', abbreviation: '', juc_member: null,
+    agreement_type: '', academic_collab: false, research_collab: false,
+    start_date: '', end_date: '', i_kohza: '', pic_mjiit: '',
+    jd_dd: '', joint_lab: '', staff_mobility: '', student_mobility: '', joint_supervision: '',
+    joint_research: '', joint_publication: ''
+  });
+
+  setContacts([{ name: '', email: '' }]);
+  setOthers([{ field: '', value: '' }]);
+  setCoTeachings([{ name: '', year: '' }]);
+  setStaffMobilities([{ name: '', year: '' }]);
+  setStudentMobilities([{ name: '', year: '', number_of_students: '' }]);
+  setJointSupervisions([{ name: '', year: '' }]);
+  setJointResearches([{ name: '', year: '' }]);
+  setJointPublications([{ publisher: '', author: '', year: '' }]);
+};
+
+
+
   const handleSubmit = async e => {
     e.preventDefault();
     const payload = {
@@ -95,7 +116,8 @@ const checkboxClasses = "w-4 h-4 text-[#1F2163] border-gray-300 rounded focus:ri
       setMessage('Failed to save agreement.');
     } else {
       setMessage('Agreement saved successfully!');
-      setTimeout(() => window.location.reload(), 3000);
+      setForm(prev => ({ ...prev, agreement_type: '' }));
+      setTimeout(() => setMessage(''), 3000);
     }
   };
 
@@ -780,6 +802,7 @@ const checkboxClasses = "w-4 h-4 text-[#1F2163] border-gray-300 rounded focus:ri
             </button>
           </div>
 
+
           {/* Submit Section */}
           <div className="flex justify-end">
             <button 
@@ -800,8 +823,10 @@ const checkboxClasses = "w-4 h-4 text-[#1F2163] border-gray-300 rounded focus:ri
               {message}
             </motion.div>
           )}
+
         </form>
       </div>
+      
     </Sidebar>
+
   );
-}
