@@ -107,7 +107,7 @@ export default function Sidebar({ children, role, email }) {
   };
 
   return (
-    <div className="flex min-h-screen bg-gradient-to-b from-[#e8b756] to-orange-100"> 
+    <div className="flex min-h-screen bg-gradient-to-b from-[#e8b756] to-[#e8b756]"> 
       {/* Sidebar */}
       <div className="w-55 bg-[#1F2163] flex flex-col p-0 shadow-xl relative">
       {/* Full-width Logo touching top corners */}

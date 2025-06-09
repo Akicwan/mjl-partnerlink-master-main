@@ -187,7 +187,9 @@ export default function AgreementsPage() {
                     <TableHead className="text-[#1F2163] uppercase font-bold">Type</TableHead>
                     <TableHead className="text-[#1F2163] uppercase font-bold">Start Date</TableHead>
                     <TableHead className="text-[#1F2163] uppercase font-bold">End Date</TableHead>
+                    <TableHead className="text-[#1F2163] uppercase font-bold">Status</TableHead>
                     <TableHead className="text-[#1F2163] uppercase font-bold text-right">Actions</TableHead>
+
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -211,7 +213,20 @@ export default function AgreementsPage() {
                       <TableCell className="text-gray-600">
                         {new Date(item.end_date).toLocaleDateString('en-MY')}
                       </TableCell>
+                     <TableCell>
+                    {new Date(item.end_date) < new Date() ? (
+                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                        Expired
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                        Active
+                      </span>
+                    )}
+                  </TableCell>  
+
                       <TableCell className="text-right">
+
                         <button
                           onClick={(e) => {
                             e.stopPropagation();

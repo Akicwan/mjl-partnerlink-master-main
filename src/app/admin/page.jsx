@@ -242,7 +242,8 @@ export default function AdminDashboard() {
         {/* Gradient Header */}
         <div className="bg-gradient-to-r from-[#1F2163] to-[#161A42] p-8 rounded-xl shadow-lg mb-8">
           <h1 className="text-3xl font-bold text-white">Admin Dashboard</h1>
-          <p className="text-blue-100 mt-2">Comprehensive overview of partnership activities</p>
+          <p className="text-blue-100 mt-2">Overview of MJL Collaborations and Agreements
+</p>
         </div>
 
         {/* Filter Buttons */}
@@ -276,43 +277,43 @@ export default function AdminDashboard() {
       <StatCard 
         title="Total Agreements" 
         value={totalAgreements} 
-        icon="📋"
+     
         color="bg-blue-100 text-blue-800"
       />
       <StatCard 
         title="Total Student Mobility" 
         value={totalStudents} 
-        icon="👨‍🎓"
+  
         color="bg-purple-100 text-purple-800"
       />
       <StatCard 
         title="Total Staff Mobility" 
         value={totalStaff} 
-        icon="👩‍🏫"
+     
         color="bg-pink-100 text-pink-800"
       />
       <StatCard 
         title="Joint Research" 
         value={totalJointResearch} 
-        icon="🔬"
+  
         color="bg-teal-100 text-teal-800"
       />
       <StatCard 
         title="Joint Publications" 
         value={totalJointPublication} 
-        icon="📄"
+  
         color="bg-indigo-100 text-indigo-800"
       />
       <StatCard 
         title="Co-Teaching" 
         value={totalCoTeaching} 
-        icon="👩‍🏫"
+ 
         color="bg-orange-100 text-orange-800"
       />
       <StatCard 
         title="Joint Supervision" 
         value={totalJointSupervision} 
-        icon="👨‍⚖️"
+     
         color="bg-amber-100 text-amber-800"
       />
     </div>
@@ -341,7 +342,7 @@ export default function AdminDashboard() {
         title="Co-Teaching & Joint Supervision"
         data={coTeachingData}
         bars={[
-          <Bar key="co_teaching" dataKey="co_teaching" fill="#D4A59A" name="Co-Teaching" radius={[4, 4, 0, 0]}/>,
+          <Bar key="co_teaching" dataKey="co_teaching" fill="#d9a96a" name="Co-Teaching" radius={[4, 4, 0, 0]}/>,
           <Bar key="joint_supervision" dataKey="joint_supervision" fill="#7D5A5A" name="Supervision" radius={[4, 4, 0, 0]}/>
         ]}
       />
@@ -356,13 +357,13 @@ export default function AdminDashboard() {
                 <StatCard 
                   title="Total Student Mobility" 
                   value={totalStudents} 
-                  icon="👨‍🎓"
+           
                   color="bg-purple-100 text-purple-800"
                 />
                 <StatCard 
                   title="Total Staff Mobility" 
                   value={totalStaff} 
-                  icon="👩‍🏫"
+    
                   color="bg-pink-100 text-pink-800"
                 />
               </div>
@@ -384,13 +385,13 @@ export default function AdminDashboard() {
                 <StatCard 
                   title="Joint Research" 
                   value={totalJointResearch} 
-                  icon="🔬"
+               
                   color="bg-teal-100 text-teal-800"
                 />
                 <StatCard 
                   title="Joint Publications" 
                   value={totalJointPublication} 
-                  icon="📄"
+              
                   color="bg-blue-100 text-blue-800"
                 />
               </div>
@@ -412,13 +413,13 @@ export default function AdminDashboard() {
                 <StatCard 
                   title="Co-Teaching" 
                   value={totalCoTeaching} 
-                  icon="👩‍🏫"
+                
                   color="bg-orange-100 text-orange-800"
                 />
                 <StatCard 
                   title="Joint Supervision" 
                   value={totalJointSupervision} 
-                  icon="👨‍⚖️"
+          
                   color="bg-amber-100 text-amber-800"
                 />
               </div>
@@ -426,7 +427,7 @@ export default function AdminDashboard() {
                 title="Co-Teaching & Joint Supervision"
                 data={coTeachingData}
                 bars={[
-                  <Bar key="co_teaching" dataKey="co_teaching" fill="#D4A59A" name="Co-Teaching" radius={[4, 4, 0, 0]}/>,
+                  <Bar key="co_teaching" dataKey="co_teaching" fill="#d9a96a" name="Co-Teaching" radius={[4, 4, 0, 0]}/>,
                   <Bar key="joint_supervision" dataKey="joint_supervision" fill="#7D5A5A" name="Supervision" radius={[4, 4, 0, 0]}/>
                 ]}
               />

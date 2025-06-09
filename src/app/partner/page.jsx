@@ -1,12 +1,10 @@
 'use client';
-
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '../lib/supabaseClient';
 import Sidebar from '../components/Sidebar';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table';
-import DatePicker from 'react-datepicker';
-import 'react-datepicker/dist/react-datepicker.css';
+// import { FiFilter, FiCalendar, FiFileText, FiClock, FiCheckCircle, FiXCircle, FiChevronDown, FiInfo, FiUsers, FiBook, FiBookmark, FiLayers } from 'react-icons/fi';
 
 export default function PartnerDashboard() {
   const [userEmail, setUserEmail] = useState(null);
@@ -125,86 +123,129 @@ export default function PartnerDashboard() {
 
   const userName = userEmail ? userEmail.split('@')[0] : '';
 
-  if (!userEmail || loading) return <div className="p-4 text-gray-600">Loading...</div>;
+  if (!userEmail || loading) return (
+    <div className="flex justify-center items-center h-screen">
+      <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#1F2163]"></div>
+    </div>
+  );
 
   return (
     <Sidebar role="partner" email={userEmail} userName={userName}>
-      <div className="text-black space-y-6">
-        <h1 className="text-3xl font-bold text-[#1F2163]">{universityName}</h1>
-
-        {/* Statistics */}
-        <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
-          <h2 className="text-lg font-semibold mb-3 text-[#1F2163]">Agreement Type Statistics</h2>
-          <div className="flex flex-wrap gap-4">
-            {Object.entries(typeStats).map(([type, count]) => (
-              <div key={type} className="flex items-center bg-gray-50 px-3 py-2 rounded">
-                <span className="font-medium text-gray-700">{type}:</span>
-                <span className="ml-2 bg-[#1F2163] text-white px-2 py-1 rounded-full text-sm">
-                  {count}
-                </span>
-              </div>
-            ))}
-          </div>
+      <div className="p-6 space-y-8">
+        {/* Header with University Name */}
+        <div className="bg-gradient-to-r from-[#1F2163] to-[#161A42] p-6 rounded-xl shadow-lg">
+          <h1 className="text-2xl font-bold text-white">{universityName}</h1>
+          <p className="text-blue-100">Partner Dashboard</p>
         </div>
 
-        {/* Filters */}
-        <div className="flex flex-wrap gap-4 items-end">
-          <div>
-            <label className="block text-sm text-gray-600">Filter by Agreement Type:</label>
-            <select
-              value={selectedType}
-              onChange={(e) => setSelectedType(e.target.value)}
-              className="border rounded px-2 py-1"
-            >
-              <option value="">All</option>
-              {agreementTypes.map((type) => (
-                <option key={type} value={type}>
-                  {type}
-                </option>
-              ))}
-            </select>
-          </div>
+        {/* Statistics Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          {Object.entries(typeStats).map(([type, count]) => {
+            let icon;
+            switch(type) {
+              case 'Staff Mobility': icon = <FiUsers className="text-[#D9AC42]" size={20} />; break;
+              case 'Student Mobility': icon = <FiUsers className="text-[#D9AC42]" size={20} />; break;
+              case 'Joint Research': icon = <FiBook className="text-[#D9AC42]" size={20} />; break;
+              case 'Joint Publication': icon = <FiBookmark className="text-[#D9AC42]" size={20} />; break;
+              case 'Co-Teaching': icon = <FiLayers className="text-[#D9AC42]" size={20} />; break;
+            }
+            
+            return (
+              <div key={type} className="bg-white p-5 rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
+                <div className="flex items-center gap-4">
+                  <div>
+                    <p className="text-sm text-gray-500">{type}</p>
+                    <p className="text-2xl font-bold text-[#1F2163]">{count}</p>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
 
-          <div>
-            <label className="block text-sm text-gray-600">Filter by Start Year:</label>
-            <input
-              type="text"
-              value={selectedYear}
-              onChange={(e) => setSelectedYear(e.target.value)}
-              placeholder="e.g. 2023"
-              className="border rounded px-2 py-1"
-            />
+        {/* Filter Section */}
+        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
+          <h2 className="text-lg font-semibold mb-4 text-[#1F2163] flex items-center gap-2">
+           Filter Agreements
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Agreement Type</label>
+              <div className="relative">
+                <select
+                  value={selectedType}
+                  onChange={(e) => setSelectedType(e.target.value)}
+                  className="w-full appearance-none border border-gray-300 rounded-lg px-4 py-2 pr-10 focus:ring-2 focus:ring-[#D9AC42] focus:border-[#D9AC42]"
+                >
+                  <option value="">All Types</option>
+                  {agreementTypes.map((type) => (
+                    <option key={type} value={type}>
+                      {type}
+                    </option>
+                  ))}
+                </select>
+              
+              </div>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Start Year</label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+           
+                </div>
+                <input
+                  type="text"
+                  value={selectedYear}
+                  onChange={(e) => setSelectedYear(e.target.value)}
+                  placeholder="e.g. 2023"
+                  className="w-full border border-gray-300 rounded-lg px-4 py-2 pl-10 focus:ring-2 focus:ring-[#D9AC42] focus:border-[#D9AC42]"
+                />
+              </div>
+            </div>
           </div>
         </div>
 
         {/* Agreements Table */}
-        <div className="bg-white rounded-lg shadow-md border border-gray-200 p-4">
+        <div className="bg-white rounded-xl shadow-sm overflow-hidden border border-gray-200">
           {filteredAgreements.length === 0 ? (
-            <div className="bg-yellow-100 p-4 rounded border border-yellow-300">
-              {agreements.length === 0 ? 'No agreements found for your university.' : 'No agreements match your filters.'}
+            <div className="p-8 text-center">
+              <FiInfo className="mx-auto text-gray-400 mb-2" size={24} />
+              <p className="text-gray-500">
+                {agreements.length === 0 
+                  ? 'No agreements found for your university.' 
+                  : 'No agreements match your filters.'}
+              </p>
             </div>
           ) : (
             <Table>
               <TableHeader>
-                <TableRow className="bg-[#f3f4f6] text-[#1F2163]">
-                  <TableHead>Agreement Type</TableHead>
-                  <TableHead>Start Date</TableHead>
-                  <TableHead>End Date</TableHead>
-                  <TableHead>Status</TableHead>
+                <TableRow className="bg-[#1F2163] text-white">
+                  <TableHead className="text-white">Agreement Type</TableHead>
+                  <TableHead className="text-white">Start Date</TableHead>
+                  <TableHead className="text-white">End Date</TableHead>
+                  <TableHead className="text-white">Status</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {filteredAgreements.map((item) => (
                   <TableRow
                     key={item.id}
-                    className="hover:bg-gray-100 transition cursor-pointer"
+                    className="hover:bg-gray-50 transition cursor-pointer"
                     onClick={() => handleRowClick(item)}
                   >
-                    <TableCell>{item.agreement_type || '-'}</TableCell>
+                    <TableCell className="font-medium">{item.agreement_type || '-'}</TableCell>
                     <TableCell>{item.start_date ? new Date(item.start_date).toLocaleDateString() : '-'}</TableCell>
                     <TableCell>{item.end_date ? new Date(item.end_date).toLocaleDateString() : '-'}</TableCell>
                     <TableCell>
-                      {item.end_date && new Date(item.end_date) < new Date() ? 'Expired' : 'Active'}
+                      {item.end_date && new Date(item.end_date) < new Date() ? (
+                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                          Expired
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                          <FiCheckCircle className="mr-1" /> Active
+                        </span>
+                      )}
                     </TableCell>
                   </TableRow>
                 ))}
@@ -214,16 +255,17 @@ export default function PartnerDashboard() {
         </div>
       </div>
 
-    {/* Agreement Details Modal */}
-{selectedAgreement && (
-  <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40 backdrop-blur-md transition-all">
-    <div className="bg-white w-[90vw] max-w-5xl max-h-[90vh] overflow-y-auto p-8 rounded-2xl shadow-2xl relative">
-      <h2 className="text-2xl font-bold text-[#1F2163] mb-6 border-b pb-3">
-        Agreement Details
-      </h2>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-sm">
-        {Object.entries(selectedAgreement).map(([key, value]) => {
+      {/* Agreement Details Modal */}
+      {selectedAgreement && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40 backdrop-blur-sm">
+          <div className="bg-white w-[90vw] max-w-5xl max-h-[90vh] overflow-y-auto rounded-2xl shadow-2xl">
+            <div className="bg-gradient-to-r from-[#1F2163] to-[#161A42] p-6 text-white">
+              <h2 className="text-2xl font-bold">Agreement Details</h2>
+              <p className="text-blue-100">{selectedAgreement.agreement_type || 'Agreement'}</p>
+            </div>
+            
+            <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-6">
+              {Object.entries(selectedAgreement).map(([key, value]) => {
           if (key === 'id' || key === 'contacts' || key === 'others') return null;
 
           if (key === 'start_date' || key === 'end_date') {
@@ -391,18 +433,17 @@ if (key === 'co_teaching' && Array.isArray(value)) {
         })}
       </div>
 
-      <div className="flex justify-end gap-4 mt-6">
-        <button
-          onClick={() => setSelectedAgreement(null)}
-          className="bg-gray-300 text-gray-700 py-2 px-6 rounded hover:bg-gray-400"
-        >
-          Close
-        </button>
-      </div>
-    </div>
-  </div>
-)}
-
+      <div className="p-6 border-t border-gray-200 flex justify-end">
+              <button
+                onClick={() => setSelectedAgreement(null)}
+                className="px-6 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </Sidebar>
   );
 }
