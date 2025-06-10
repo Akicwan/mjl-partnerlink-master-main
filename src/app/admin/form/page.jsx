@@ -11,7 +11,7 @@ export default function AgreementForm() {
   const router = useRouter();
 
   const [contacts, setContacts] = useState([{ name: '', email: '' }]);
-  const [others, setOthers] = useState([{ fieldName: '', value: '' }]);
+  const [others, setOthers] = useState([{ field: '', value: '' }]);
   const [coTeachings, setCoTeachings] = useState([{ name: '', year: '' }]);
   const [staffMobilities, setStaffMobilities] = useState([{ name: '', year: '' }]);
   const [studentMobilities, setStudentMobilities] = useState([{ name: '', year: '', number_of_students: '' }]);
@@ -66,7 +66,7 @@ const checkboxClasses = "w-4 h-4 text-[#1F2163] border-gray-300 rounded focus:ri
   const updateContact = (i, f, v) => setContacts(prev => prev.map((c, idx) => idx === i ? { ...c, [f]: v } : c));
   const removeContact = i => setContacts(prev => prev.filter((_, idx) => idx !== i));
 
-  const addOther = () => setOthers(prev => [...prev, { fieldName: '', value: '' }]);
+  const addOther = () => setOthers(prev => [...prev, { field: '', value: '' }]);
   const updateOther = (i, f, v) => setOthers(prev => prev.map((o, idx) => idx === i ? { ...o, [f]: v } : o));
   const removeOther = i => setOthers(prev => prev.filter((_, idx) => idx !== i));
 
@@ -763,8 +763,8 @@ const checkboxClasses = "w-4 h-4 text-[#1F2163] border-gray-300 rounded focus:ri
                     <label className={labelClasses}>Field Name</label>
                     <input
                       placeholder="Field Name" 
-                      value={o.fieldName} 
-                      onChange={e=>updateOther(i,'fieldName',e.target.value)} 
+                      value={o.field} 
+                      onChange={e=>updateOther(i,'field',e.target.value)} 
                       className={inputClasses} 
                     />
                   </div>
@@ -812,6 +812,13 @@ const checkboxClasses = "w-4 h-4 text-[#1F2163] border-gray-300 rounded focus:ri
               Submit Agreement
             </button>
           </div>
+
+          <div className="flex justify-end">
+          <button type="button" onClick={clearAllFields} className={`${buttonClasses} ml-4 bg-red-700 hover:bg-red-800`}>
+        Clear All
+       </button>
+       </div>
+  
           
           {message && (
             <motion.div 
@@ -829,4 +836,4 @@ const checkboxClasses = "w-4 h-4 text-[#1F2163] border-gray-300 rounded focus:ri
       
     </Sidebar>
 
-  );
+  );}

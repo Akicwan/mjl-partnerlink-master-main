@@ -317,7 +317,7 @@ if (['Co-Teaching', 'Staff Mobility', 'Joint Supervision', 'Joint Research'].inc
 
       {/* Edit Modal */}
       {modalOpen && editAgreement && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+        <div className="fixed inset-0 bg-gradient-to-b from-[#692B2C] to-[#1F2163] flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto">
             <div className="p-6 border-b border-gray-200">
               <h2 className="text-xl font-semibold text-[#1F2163]">Edit Agreement</h2>
