@@ -323,16 +323,16 @@ export default function AdminDashboard() {
         title="Mobility Data by Year"
         data={mobilityData}
         bars={[
-          <Bar key="students" dataKey="students" fill="#8B5FBF" name="Students" radius={[4, 4, 0, 0]}/>,
-          <Bar key="staff" dataKey="staff" fill="#FF9A8B" name="Staff" radius={[4, 4, 0, 0]}/>
+          <Bar key="students" dataKey="students" fill="#8B5FBF" name="Students" radius={[4, 4, 0, 0] } barSize={100}/>,
+          <Bar key="staff" dataKey="staff" fill="#FF9A8B" name="Staff" radius={[4, 4, 0, 0]} barSize={100}/>
         ]}
       />
       <ChartCard 
         title="Joint Research & Publication"
         data={jointData}
         bars={[
-          <Bar key="joint_research" dataKey="joint_research" fill="#4E8098" name="Research" radius={[4, 4, 0, 0]}/>,
-          <Bar key="joint_publication" dataKey="joint_publication" fill="#90C2E7" name="Publications" radius={[4, 4, 0, 0]}/>
+          <Bar key="joint_research" dataKey="joint_research" fill="#4E8098" name="Research" radius={[4, 4, 0, 0]} barSize={100}/>,
+          <Bar key="joint_publication" dataKey="joint_publication" fill="#90C2E7" name="Publications" radius={[4, 4, 0, 0]} barSize={100}/>
         ]}
       />
     </div>
@@ -342,8 +342,8 @@ export default function AdminDashboard() {
         title="Co-Teaching & Joint Supervision"
         data={coTeachingData}
         bars={[
-          <Bar key="co_teaching" dataKey="co_teaching" fill="#d9a96a" name="Co-Teaching" radius={[4, 4, 0, 0]}/>,
-          <Bar key="joint_supervision" dataKey="joint_supervision" fill="#7D5A5A" name="Supervision" radius={[4, 4, 0, 0]}/>
+          <Bar key="co_teaching" dataKey="co_teaching" fill="#d9a96a" name="Co-Teaching" radius={[4, 4, 0, 0]} barSize={100}/>,
+          <Bar key="joint_supervision" dataKey="joint_supervision" fill="#7D5A5A" name="Supervision" radius={[4, 4, 0, 0]} barSize={100}/>
         ]}
       />
     </div>
@@ -371,8 +371,8 @@ export default function AdminDashboard() {
                 title="Mobility Data by Year"
                 data={mobilityData}
                 bars={[
-                  <Bar key="students" dataKey="students" fill="#8B5FBF" name="Students" radius={[4, 4, 0, 0]}/>,
-                  <Bar key="staff" dataKey="staff" fill="#FF9A8B" name="Staff" radius={[4, 4, 0, 0]}/>
+                  <Bar key="students" dataKey="students" fill="#8B5FBF" name="Students" radius={[4, 4, 0, 0]} barSize={150}/>,
+                  <Bar key="staff" dataKey="staff" fill="#FF9A8B" name="Staff" radius={[4, 4, 0, 0]} barSize={150}/>
                 ]}
               />
             </div>
@@ -399,8 +399,8 @@ export default function AdminDashboard() {
                 title="Joint Research & Publication"
                 data={jointData}
                 bars={[
-                  <Bar key="joint_research" dataKey="joint_research" fill="#4E8098" name="Research" radius={[4, 4, 0, 0]}/>,
-                  <Bar key="joint_publication" dataKey="joint_publication" fill="#90C2E7" name="Publications" radius={[4, 4, 0, 0]}/>
+                  <Bar key="joint_research" dataKey="joint_research" fill="#4E8098" name="Research" radius={[4, 4, 0, 0]} barSize={150}/>,
+                  <Bar key="joint_publication" dataKey="joint_publication" fill="#90C2E7" name="Publications" radius={[4, 4, 0, 0]} barSize={150}/>
                 ]}
               />
             </div>
@@ -427,8 +427,8 @@ export default function AdminDashboard() {
                 title="Co-Teaching & Joint Supervision"
                 data={coTeachingData}
                 bars={[
-                  <Bar key="co_teaching" dataKey="co_teaching" fill="#d9a96a" name="Co-Teaching" radius={[4, 4, 0, 0]}/>,
-                  <Bar key="joint_supervision" dataKey="joint_supervision" fill="#7D5A5A" name="Supervision" radius={[4, 4, 0, 0]}/>
+                  <Bar key="co_teaching" dataKey="co_teaching" fill="#d9a96a" name="Co-Teaching" radius={[4, 4, 0, 0]} barSize={150}/>,
+                  <Bar key="joint_supervision" dataKey="joint_supervision" fill="#7D5A5A" name="Supervision" radius={[4, 4, 0, 0]} barSize={150}/>
                 ]}
               />
             </div>
