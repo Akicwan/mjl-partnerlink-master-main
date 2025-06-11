@@ -14,7 +14,7 @@ export default function NotifTest() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // 调试函数 - 打印关键状态
+  // Debug function - Print key states
   const debugState = () => {
     console.log('Current state:', {
       email,
@@ -27,7 +27,7 @@ export default function NotifTest() {
   };
 
   useEffect(() => {
-    debugState(); // 调试状态
+    debugState(); // Debugging status
   }, [notifications, readIds, email, role]);
 
   async function sendEmailNotification(to, subject, html) {
@@ -103,7 +103,7 @@ export default function NotifTest() {
         const today = new Date();
         today.setHours(0, 0, 0, 0);
         
-        // 1. 获取所有协议数据
+        // 1. Obtain all the protocol data
         const { data: agreements, error: agreementsError } = await supabase
           .from('agreements_2')
           .select('id, end_date, agreement_type, abbreviation, university')
@@ -115,7 +115,7 @@ export default function NotifTest() {
 
         console.log('Fetched agreements:', agreements); // 调试
         
-        // 2. 处理通知生成逻辑
+        // 2. Handle the notification generation logic
         const notes = [];
         const now = new Date();
         const oneMonthLater = new Date(now);
@@ -148,7 +148,7 @@ export default function NotifTest() {
             days_remaining: daysDiff
           };
 
-          // 3. 根据到期时间生成通知
+          // 3. Generate notifications based on the expiration time
           if (daysDiff <= 0) {
             // 已过期 - 现在跳过
           } else if (daysDiff <= 30) {
@@ -170,13 +170,13 @@ export default function NotifTest() {
           }
         });
 
-        // 4. 排序通知
+        // 4. Sorting notification
         const sortedNotes = notes.sort((a, b) => a.days_remaining - b.days_remaining);
         console.log('Generated notifications:', sortedNotes); // 调试
 
         setNotifications(sortedNotes);
 
-        // 5. 发送未读通知邮件
+        // 5. Send an unread notification email
         const sendPromises = sortedNotes.map(async note => {
           const key = `${note.id}-${note.type}`;
           if (!readIds.has(key)) {
