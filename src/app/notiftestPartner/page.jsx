@@ -11,6 +11,7 @@ export default function PartnerNotification() {
   const [email, setEmail] = useState('');
   const [university, setUniversity] = useState('');
   const [loading, setLoading] = useState(true);
+  const [unreadCount, setUnreadCount] = useState(0);
 
   // Get logged-in user info (email + university)
   useEffect(() => {
@@ -50,6 +51,19 @@ export default function PartnerNotification() {
       setReadIds(new Set(JSON.parse(storedRead)));
     }
   }, [email]);
+
+  // Calculate unread count
+  useEffect(() => {
+    if (notifications.length > 0) {
+      const count = notifications.filter(n => {
+        const key = n.id + '-' + n.type;
+        return !readIds.has(key);
+      }).length;
+      setUnreadCount(count);
+    } else {
+      setUnreadCount(0);
+    }
+  }, [notifications, readIds]);
 
   // Fetch university-specific notifications
   useEffect(() => {
@@ -152,7 +166,7 @@ export default function PartnerNotification() {
   });
 
   return (
-    <Sidebar role="partner" email={email}>
+    <Sidebar role="partner" email={email} unreadCount={unreadCount}>
       <div className="p-4 max-w-4xl mx-auto font-sans">
         <h1 className="text-2xl font-bold mb-4">Partner Notification Center</h1>
 
