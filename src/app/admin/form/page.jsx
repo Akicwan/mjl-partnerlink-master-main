@@ -1,10 +1,11 @@
 "use client";
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { AnimatePresence, motion } from 'framer-motion';
 import Sidebar from '../../components/Sidebar';
 import { supabase } from '../../lib/supabaseClient';
+import AgreementSidebar from '../../components/AgreementSidebar';
 
 export default function AgreementForm() {
   const [userEmail, setUserEmail] = useState(null);
@@ -18,6 +19,7 @@ export default function AgreementForm() {
   const [jointSupervisions, setJointSupervisions] = useState([{ name: '', year: '' }]);
   const [jointResearches, setJointResearches] = useState([{ name: '', year: '' }]);
   const [jointPublications, setJointPublications] = useState([{ publisher: '', author: '', year: '' }]);
+  const [message, setMessage] = useState('');
 
   const [form, setForm] = useState({
     university: '', abbreviation: '', juc_member: null,
@@ -26,7 +28,22 @@ export default function AgreementForm() {
     jd_dd: '', joint_lab: '', staff_mobility: '', student_mobility: '', joint_supervision: '',
     joint_research: '', joint_publication: ''
   });
-  const [message, setMessage] = useState('');
+
+  const [agreements, setAgreements] = useState([]);
+
+      useEffect(() => {
+        const fetchAgreements = async () => {
+          const { data, error } = await supabase
+            .from('agreements_2')
+            .select('*')
+            .order('university', { ascending: true });
+
+          if (error) console.error(error);
+          else setAgreements(data || []);
+        };
+        fetchAgreements();
+      }, []);
+  
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -93,6 +110,45 @@ const checkboxClasses = "w-4 h-4 text-[#1F2163] border-gray-300 rounded focus:ri
   setJointPublications([{ publisher: '', author: '', year: '' }]);
 };
 
+const loadAgreement = a => {
+  setForm({
+    university: a.university || '',
+    abbreviation: a.abbreviation || '',
+    juc_member: a.juc_member,
+    agreement_type: a.agreement_type || '',
+    academic_collab: a.academic_collab,
+    research_collab: a.research_collab,
+    start_date: a.start_date || '',
+    end_date: a.end_date || '',
+    i_kohza: a.i_kohza || '',
+    pic_mjiit: a.pic_mjiit || '',
+    jd_dd: a.jd_dd || '',
+    joint_lab: a.joint_lab || '',
+    // the array-style details live in their own states:
+    staff_mobility: '', student_mobility: '',
+    joint_supervision: '', joint_research: '', joint_publication: ''
+  });
+
+  setContacts(a.contacts?.length ? a.contacts : [{ name: '', email: '' }]);
+  setOthers(a.others?.length ? a.others : [{ field: '', value: '' }]);
+  setCoTeachings(a.co_teaching?.length ? a.co_teaching : [{ name: '', year: '' }]);
+  setStaffMobilities(a.staff_mobility?.length ? a.staff_mobility : [{ name: '', year: '' }]);
+  setStudentMobilities(
+    a.student_mobility?.length
+      ? a.student_mobility
+      : [{ name: '', year: '', number_of_students: '' }]
+  );
+  setJointSupervisions(a.joint_supervision?.length ? a.joint_supervision : [{ name: '', year: '' }]);
+  setJointResearches(a.joint_research?.length ? a.joint_research : [{ name: '', year: '' }]);
+  setJointPublications(
+    a.joint_publication?.length
+      ? a.joint_publication
+      : [{ publisher: '', author: '', year: '' }]
+  );
+};
+
+// agreement sidebar data
+
 
 
   const handleSubmit = async e => {
@@ -123,7 +179,9 @@ const checkboxClasses = "w-4 h-4 text-[#1F2163] border-gray-300 rounded focus:ri
 
   return (
     <Sidebar role="admin" email={userEmail}>
-      <div className="p-6 bg-gray-50 min-h-screen">
+      <div className="flex">
+        <AgreementSidebar agreements={agreements} onSelect={loadAgreement} />
+        <div className="flex-1 p-6 bg-gray-50 min-h-screen overflow-y-auto">
         <form onSubmit={handleSubmit} className="space-y-6 max-w-6xl mx-auto">
         <div className="bg-gradient-to-r from-[#1F2163] to-[#161A42] p-6 rounded-xl shadow-lg">
   <h2 className="text-2xl font-bold text-white">Agreement Form</h2>
@@ -833,7 +891,6 @@ const checkboxClasses = "w-4 h-4 text-[#1F2163] border-gray-300 rounded focus:ri
 
         </form>
       </div>
-      
+      </div>
     </Sidebar>
-
   );}
