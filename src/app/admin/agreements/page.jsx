@@ -19,6 +19,9 @@ export default function AgreementsPage() {
   const [editMode, setEditMode] = useState(false);
   const [editedAgreement, setEditedAgreement] = useState({});
   const router = useRouter();
+  const [sortAsc, setSortAsc] = useState(true);
+  const [showActiveOnly, setShowActiveOnly] = useState(false);
+
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -40,11 +43,14 @@ export default function AgreementsPage() {
         console.error("Error fetching agreement data:", error);
         setAgreements([]);
       } else {
-        // Sort agreements alphabetically by university name
-        const sortedAgreements = [...data].sort((a, b) => 
-          a.university.localeCompare(b.university)
-        );
-        setAgreements(sortedAgreements);
+        // Sort agreements by end date
+          const distantFuture = new Date('2999-12-31').getTime();
+          const sortedAgreements = [...data].sort((a, b) => {
+          const aEnd = a.end_date ? new Date(a.end_date).getTime() : distantFuture;
+          const bEnd = b.end_date ? new Date(b.end_date).getTime() : distantFuture;
+          return aEnd - bEnd;
+        });
+setAgreements(sortedAgreements);
       }
       setLoading(false);
     };
@@ -106,11 +112,19 @@ export default function AgreementsPage() {
 };
 
 
-  const filteredAgreements = [...agreements].filter(item => {
+  const filteredAgreements = [...agreements]
+  .filter(item => {
     const matchesQuery = item.university.toLowerCase().includes(searchQuery.toLowerCase()) ||
       item.agreement_type.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesType = !filterType || item.agreement_type === filterType;
-    return matchesQuery && matchesType;
+    const isActive = new Date(item.end_date) >= new Date();
+    return matchesQuery && matchesType && (!showActiveOnly || isActive);
+  })
+  .sort((a, b) => {
+    const future = new Date('2100-12-31').getTime();
+    const aTime = a.end_date ? new Date(a.end_date).getTime() : future;
+    const bTime = b.end_date ? new Date(b.end_date).getTime() : future;
+    return sortAsc ? aTime - bTime : bTime - aTime;
   });
 
   if (!userEmail || loading) return <div className="p-6 flex justify-center"><div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-[#1F2163]"></div></div>;
@@ -158,6 +172,23 @@ export default function AgreementsPage() {
 
         {/* Stats */}
         <div className="flex justify-between items-center mb-4">
+          <div className="flex items-center gap-4 mb-4">
+  <button
+    onClick={() => setSortAsc(!sortAsc)}
+    className="px-3 py-1 border rounded text-sm bg-gray-100 hover:bg-gray-200"
+  >
+    Sort: {sortAsc ? 'Soonest → Latest' : 'Latest → Soonest'}
+  </button>
+  <label className="flex items-center gap-2 text-sm">
+    <input
+      type="checkbox"
+      checked={showActiveOnly}
+      onChange={e => setShowActiveOnly(e.target.checked)}
+    />
+    Show Active Only
+  </label>
+</div>
+
           <p className="text-sm text-gray-600">
             Showing <span className="font-semibold text-[#1F2163]">{filteredAgreements.length}</span> of <span className="font-semibold">{agreements.length}</span> agreements
           </p>
