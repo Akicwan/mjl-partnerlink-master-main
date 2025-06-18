@@ -5,7 +5,7 @@ import { supabase } from '../lib/supabaseClient';
 import Sidebar from '../components/Sidebar';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table';
 
-import { FiInfo, FiCheckCircle, FiUsers, FiBook, FiBookmark, FiLayers } from 'react-icons/fi';
+//import { FiInfo, FiCheckCircle, FiUsers, FiBook, FiBookmark, FiLayers } from 'react-icons/fi';
 
 
 
