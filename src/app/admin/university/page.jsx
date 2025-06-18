@@ -324,7 +324,6 @@ if (['Co-Teaching', 'Staff Mobility', 'Joint Supervision', 'Joint Research'].inc
             </div>
             
             <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* Keep all your existing modal content exactly as is */}
               {[
                 'contacts',
                 'juc_member',

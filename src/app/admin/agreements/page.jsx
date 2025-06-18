@@ -19,6 +19,9 @@ export default function AgreementsPage() {
   const [editMode, setEditMode] = useState(false);
   const [editedAgreement, setEditedAgreement] = useState({});
   const router = useRouter();
+  const [sortAsc, setSortAsc] = useState(true);
+  const [showActiveOnly, setShowActiveOnly] = useState(false);
+
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -40,11 +43,14 @@ export default function AgreementsPage() {
         console.error("Error fetching agreement data:", error);
         setAgreements([]);
       } else {
-        // Sort agreements alphabetically by university name
-        const sortedAgreements = [...data].sort((a, b) => 
-          a.university.localeCompare(b.university)
-        );
-        setAgreements(sortedAgreements);
+        // Sort agreements by end date
+          const distantFuture = new Date('2999-12-31').getTime();
+          const sortedAgreements = [...data].sort((a, b) => {
+          const aEnd = a.end_date ? new Date(a.end_date).getTime() : distantFuture;
+          const bEnd = b.end_date ? new Date(b.end_date).getTime() : distantFuture;
+          return aEnd - bEnd;
+        });
+setAgreements(sortedAgreements);
       }
       setLoading(false);
     };
@@ -89,27 +95,36 @@ export default function AgreementsPage() {
   };
 
   const handleSaveEdit = async () => {
-    const { error } = await supabase
-      .from('agreements_2')
-      .update(editedAgreement)
-      .eq('id', editedAgreement.id);
+  const { error } = await supabase
+    .from('agreements_2')
+    .update(editedAgreement)
+    .eq('id', editedAgreement.id);
 
-    if (!error) {
-      setAgreements(prev =>
-        prev.map(item => item.id === editedAgreement.id ? editedAgreement : item)
-      );
-      setSelectedAgreement(editedAgreement);
-      setEditMode(false);
-    } else {
-      console.error("Update failed:", error.message);
-    }
-  };
+  if (!error) {
+    setAgreements(prev =>
+      prev.map(item => item.id === editedAgreement.id ? editedAgreement : item)
+    );
+    setSelectedAgreement(null); // CLOSES THE MODAL
+    setEditMode(false);
+  } else {
+    console.error("Update failed:", error.message);
+  }
+};
 
-  const filteredAgreements = [...agreements].filter(item => {
+
+  const filteredAgreements = [...agreements]
+  .filter(item => {
     const matchesQuery = item.university.toLowerCase().includes(searchQuery.toLowerCase()) ||
       item.agreement_type.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesType = !filterType || item.agreement_type === filterType;
-    return matchesQuery && matchesType;
+    const isActive = new Date(item.end_date) >= new Date();
+    return matchesQuery && matchesType && (!showActiveOnly || isActive);
+  })
+  .sort((a, b) => {
+    const future = new Date('2100-12-31').getTime();
+    const aTime = a.end_date ? new Date(a.end_date).getTime() : future;
+    const bTime = b.end_date ? new Date(b.end_date).getTime() : future;
+    return sortAsc ? aTime - bTime : bTime - aTime;
   });
 
   if (!userEmail || loading) return <div className="p-6 flex justify-center"><div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-[#1F2163]"></div></div>;
@@ -157,6 +172,23 @@ export default function AgreementsPage() {
 
         {/* Stats */}
         <div className="flex justify-between items-center mb-4">
+          <div className="flex items-center gap-4 mb-4">
+  <button
+    onClick={() => setSortAsc(!sortAsc)}
+    className="px-3 py-1 border rounded text-sm bg-gray-100 hover:bg-gray-200"
+  >
+    Sort: {sortAsc ? 'Soonest → Latest' : 'Latest → Soonest'}
+  </button>
+  <label className="flex items-center gap-2 text-sm">
+    <input
+      type="checkbox"
+      checked={showActiveOnly}
+      onChange={e => setShowActiveOnly(e.target.checked)}
+    />
+    Show Active Only
+  </label>
+</div>
+
           <p className="text-sm text-gray-600">
             Showing <span className="font-semibold text-[#1F2163]">{filteredAgreements.length}</span> of <span className="font-semibold">{agreements.length}</span> agreements
           </p>
@@ -249,176 +281,276 @@ export default function AgreementsPage() {
 
       {/* Modal */}
       {selectedAgreement && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm transition-all">
-          <div className="bg-white w-[90vw] max-w-5xl max-h-[90vh] overflow-y-auto p-8 rounded-xl shadow-xl relative">
+        <div className="fixed inset-0 bg-gradient-to-b from-[#692B2C] to-[#1F2163] flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto">
+            <div className="p-6 border-b border-gray-200">
+              <h2 className="text-xl font-semibold text-[#1F2163]">Edit Agreement</h2>
+            </div>
+            
+            <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-6">
+              {[
+                'contacts',
+                'juc_member',
+                'academic_collab',
+                'jd_dd',
+                'joint_lab',
+                'co_teaching',
+                'staff_mobility',
+                'student_mobility',
+                'joint_supervision',
+                'research_collab',
+                'joint_research',
+                'joint_publication',
+                'start_date',
+                'end_date',
+                'i_kohza',
+                'pic_mjiit',
+                'others'
+              ].map((key) => {
+      
+  const value = editedAgreement[key];
+  if (key === 'id') return null;
+
+  const isAcademicField = ['jd_dd', 'joint_lab', 'staff_mobility', 'student_mobility', 'joint_supervision', 'co_teaching'].includes(key);
+  const isResearchField = ['joint_research', 'joint_publication'].includes(key);
+
+  if ((isAcademicField && !editedAgreement.academic_collab) || (isResearchField && !editedAgreement.research_collab)) {
+    return null;
+  }
+
+  if (key === 'start_date' || key === 'end_date') {
+  const date = value ? new Date(value) : new Date();
+
+  const year = date.getFullYear();
+  const month = date.getMonth() + 1;
+  const day = date.getDate();
+
+  const years = Array.from({ length: 401 }, (_, i) => new Date().getFullYear() - 200 + i);
+  const months = Array.from({ length: 12 }, (_, i) => i + 1);
+  const days = Array.from({ length: 31 }, (_, i) => i + 1);
+
+  const updateDate = (newYear, newMonth, newDay) => {
+    const newDate = new Date(newYear, newMonth - 1, newDay);
+    setEditedAgreement((prev) => ({
+      ...prev,
+      [key]: newDate.toISOString().split('T')[0],
+    }));
+  };
+  
+
+  return (
+    <div key={key} className="col-span-full">
+      <label className="text-sm text-gray-700 block mb-1">{key === 'start_date' ? 'Start Date' : 'End Date'}</label>
+      <div className="flex gap-2">
+        <select
+          value={year}
+          onChange={(e) => updateDate(+e.target.value, month, day)}
+          className="border border-gray-300 rounded px-2 py-1"
+        >
+          {years.map((y) => <option key={y} value={y}>{y}</option>)}
+        </select>
+        <select
+          value={month}
+          onChange={(e) => updateDate(year, +e.target.value, day)}
+          className="border border-gray-300 rounded px-2 py-1"
+        >
+          {months.map((m) => <option key={m} value={m}>{m}</option>)}
+        </select>
+        <select
+          value={day}
+          onChange={(e) => updateDate(year, month, +e.target.value)}
+          className="border border-gray-300 rounded px-2 py-1"
+        >
+          {days.map((d) => <option key={d} value={d}>{d}</option>)}
+        </select>
+      </div>
+    </div>
+  );
+}
+
+
+  // Helper to render dynamic JSON fields
+  const renderJsonArrayEditor = (key, label, fields) => {
+    let arr = [];
+    try {
+      arr = Array.isArray(value) ? value : JSON.parse(value) || [];
+    } catch {
+      arr = [];
+    }
+
+    const handleChange = (index, field, fieldValue) => {
+      const updated = [...arr];
+      updated[index] = { ...updated[index], [field]: fieldValue };
+      setEditedAgreement((prev) => ({
+        ...prev,
+        [key]: updated
+      }));
+    };
+
+    const handleAdd = () => {
+      const newEntry = fields.reduce((obj, f) => ({ ...obj, [f]: '' }), {});
+      setEditedAgreement((prev) => ({
+        ...prev,
+        [key]: [...arr, newEntry]
+      }));
+    };
+
+    const handleRemove = (index) => {
+      const updated = arr.filter((_, i) => i !== index);
+      setEditedAgreement((prev) => ({
+        ...prev,
+        [key]: updated
+      }));
+    };
+    
+
+    return (
+      <div key={key} className="col-span-full">
+        <label className="text-sm text-gray-700 block mb-1">{label}</label>
+        {arr.map((item, index) => (
+          <div key={index} className="flex gap-2 items-center mb-2">
+            {fields.map((field, i) => (
+              <input
+                key={i}
+                type="text"
+                placeholder={field.replace(/_/g, ' ')}
+                value={item[field] || ''}
+                onChange={(e) => handleChange(index, field, e.target.value)}
+                className="px-3 py-2 border border-gray-300 rounded-md"
+              />
+            ))}
             <button
-              onClick={() => setSelectedAgreement(null)}
-              className="absolute top-4 right-4 text-gray-500 hover:text-gray-700 p-1 rounded-full hover:bg-gray-100 transition"
+              type="button"
+              onClick={() => handleRemove(index)}
+              className="text-red-500 hover:text-red-700"
             >
-              ×
+              ✕
             </button>
+          </div>
+        ))}
+        <button
+          type="button"
+          onClick={handleAdd}
+          className="mt-2 px-3 py-1 bg-blue-500 text-white text-sm rounded hover:bg-blue-600"
+        >
+          Add {label}
+        </button>
+      </div>
+    );
+  };
 
-            <div className="flex justify-between items-center mb-6">
-              <h2 className="text-2xl font-bold text-[#1F2163]">
-                Agreement Details
-              </h2>
-              {!editMode && (
-                <button
-                  onClick={() => setEditMode(true)}
-                  className="bg-[#1F2163] text-white py-2 px-4 rounded-lg hover:bg-[#0f1856] transition"
-                >
-                  Edit
-                </button>
-              )}
+  // === Render JSONB fields ===
+  if (key === 'co_teaching') {
+    return renderJsonArrayEditor('co_teaching', 'Co-Teaching', ['name', 'year']);
+  }
+  if (key === 'staff_mobility') {
+    return renderJsonArrayEditor('staff_mobility', 'Staff Mobility', ['name', 'year']);
+  }
+  if (key === 'student_mobility') {
+    return renderJsonArrayEditor('student_mobility', 'Student Mobility', ['name', 'year', 'number_of_students']);
+  }
+  if (key === 'joint_supervision') {
+    return renderJsonArrayEditor('joint_supervision', 'Joint Supervision', ['name', 'year']);
+  }
+  if (key === 'joint_research') {
+    return renderJsonArrayEditor('joint_research', 'Joint Research', ['name', 'year']);
+  }
+  if (key === 'joint_publication') {
+    return renderJsonArrayEditor('joint_publication', 'Joint Publication', ['publisher', 'author', 'year']);
+  }
+  if (key === 'contacts') {
+  return renderJsonArrayEditor('contacts', 'Contacts', ['name', 'email']);
+  }
+  if (key === 'others') {
+  return renderJsonArrayEditor('others', 'Others', ['field', 'value']);
+  }
+
+
+  // === Handle yes/no toggles ===
+  if (key === 'juc_member' || key === 'academic_collab' || key === 'research_collab') {
+    const labelMap = {
+      juc_member: 'JUC Member',
+      academic_collab: 'Academic Collaboration',
+      research_collab: 'Research Collaboration'
+    };
+
+    return (
+      <div key={key} className="col-span-full">
+        <label className="text-sm text-gray-700 block mb-1">{labelMap[key]}</label>
+        <div className="flex gap-2">
+          <button
+            type="button"
+            onClick={() => setEditedAgreement((prev) => ({ ...prev, [key]: true }))}
+            className={`px-4 py-2 rounded ${value === true ? 'bg-green-600 text-white' : 'bg-gray-200 text-gray-800'}`}
+          >
+            Yes
+          </button>
+          <button
+            type="button"
+            onClick={() => setEditedAgreement((prev) => ({ ...prev, [key]: false }))}
+            className={`px-4 py-2 rounded ${value === false ? 'bg-red-600 text-white' : 'bg-gray-200 text-gray-800'}`}
+          >
+            No
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  const handleModalChange = (e) => {
+  const { name, value } = e.target;
+  setEditedAgreement((prev) => ({
+    ...prev,
+    [name]: value,
+  }));
+};
+
+  if (key === 'jd_dd') 
+    { 
+      const labelMap = { jd_dd: "Join Degree / Double Degree" };
+      return (
+      <div key={key} className="col-span-full">
+        <label className="text-sm text-gray-700 block mb-1">{labelMap[key]}</label>
+        <div className="flex gap-2">
+
+      <textarea
+        name={key}
+        value={value ?? ''}
+        onChange={handleModalChange}
+        className="w-full px-3 py-2 border border-gray-300 rounded-md resize-y min-h-[80px]"
+      />
+      </div>
+      </div>
+          )
+    }
+
+  // === Default text area fallback ===
+  return (
+    <div key={key} className="col-span-full">
+      <label className="text-sm text-gray-700 block mb-1">{key}</label>
+      <textarea
+        name={key}
+        value={value ?? ''}
+        onChange={handleModalChange}
+        className="w-full px-3 py-2 border border-gray-300 rounded-md resize-y min-h-[80px]"
+      />
+    </div>
+  );
+})}
+
             </div>
-
-            {/* Keep the modal content exactly as in your original code */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-sm">
-              {Object.entries(editedAgreement).map(([key, value]) => {
-                if (['id', 'contacts', 'others'].includes(key)) return null;
-
-                // Date fields
-                if (key === 'start_date' || key === 'end_date') {
-                  const label = key === 'start_date' ? 'Start Date' : 'End Date';
-                  return (
-                    <div key={key} className="flex flex-col">
-                      <label className="block font-medium text-gray-700 mb-1">
-                        {label}
-                      </label>
-                      {editMode ? (
-                        <DatePicker
-                          selected={value ? new Date(value) : null}
-                          onChange={(date) => setEditedAgreement(prev => ({ ...prev, [key]: date }))}
-                          dateFormat="dd MMM yyyy"
-                          showYearDropdown
-                          scrollableYearDropdown
-                          className="border border-gray-300 px-4 py-2 rounded-md focus:outline-none focus:ring-2 focus:ring-[#D9AC42] w-full"
-                        />
-                      ) : (
-                        <p className="text-gray-800 bg-gray-50 px-3 py-2 rounded">
-                          {value ? new Date(value).toLocaleDateString() : '-'}
-                        </p>
-                      )}
-                    </div>
-                  );
-                }
-
-                // Dropdown fields
-                if (key === 'agreement_type') {
-                  const agreementTypes = [
-                    'MOA', 'MOA Regional Conference Program Agreement', 'MOU', 'Cross Appointment',
-                    'Academic Cooperation', 'Outsourcing Agreement', 'Satellite Office', 'Exchange Agreement',
-                    'Agreement', 'Academic Agreement', 'Collaborative Research Agreement Biological Soil Crust (BSC)',
-                    'LOA & Outsourcing Agreement (two agreement types)', 'CRA', 'SEA', 'LOA', 'LOC', 'LOI', 'JRA'
-                  ];
-                  return (
-                    <div key={key} className="flex flex-col">
-                      <label className="text-gray-700 font-medium mb-1">Agreement Type</label>
-                      {editMode ? (
-                        <select
-                          value={value || ''}
-                          onChange={(e) => setEditedAgreement(prev => ({ ...prev, [key]: e.target.value }))}
-                          className="border border-gray-300 px-4 py-2 rounded-md focus:outline-none focus:ring-2 focus:ring-[#D9AC42] w-full"
-                        >
-                          <option value="" disabled>Select Agreement Type</option>
-                          {agreementTypes.map((type, idx) => (
-                            <option key={idx} value={type}>{type}</option>
-                          ))}
-                        </select>
-                      ) : (
-                        <p className="text-gray-800 bg-gray-50 px-3 py-2 rounded">{value || '-'}</p>
-                      )}
-                    </div>
-                  );
-                }
-
-                // Boolean fields
-                if (['juc_member', 'academic_collab', 'research_collab'].includes(key)) {
-                  return (
-                    <div key={key} className="flex flex-col">
-                      <label className="text-gray-700 font-medium mb-1">
-                        {key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
-                      </label>
-                      {editMode ? (
-                        <select
-                          value={value ? 'yes' : 'no'}
-                          onChange={(e) => setEditedAgreement(prev => ({ ...prev, [key]: e.target.value === 'yes' }))}
-                          className="border border-gray-300 px-4 py-2 rounded-md focus:outline-none focus:ring-2 focus:ring-[#D9AC42] w-full"
-                        >
-                          <option value="yes">Yes</option>
-                          <option value="no">No</option>
-                        </select>
-                      ) : (
-                        <p className="text-gray-800 bg-gray-50 px-3 py-2 rounded">{value ? 'Yes' : 'No'}</p>
-                      )}
-                    </div>
-                  );
-                }
-
-                // Array fields
-                const listFields = {
-                  staff_mobility: item => `• ${item.name} (${item.year})`,
-                  student_mobility: item => `• ${item.name} (${item.year}) - ${item.number_of_students} students`,
-                  joint_supervision: item => `• ${item.name} (${item.year})`,
-                  joint_research: item => `• ${item.name} (${item.year})`,
-                  joint_publication: item => `• ${item.publisher} - ${item.author} (${item.year})`,
-                  co_teaching: item => `• ${item.name} (${item.year})`
-                };
-
-                if (listFields[key] && Array.isArray(value)) {
-                  return (
-                    <div key={key} className="flex flex-col">
-                      <label className="text-gray-700 font-medium mb-1">
-                        {key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
-                      </label>
-                      {value.length > 0 ? (
-                        <ul className="bg-gray-50 px-3 py-2 rounded text-gray-800 space-y-1 max-h-32 overflow-y-auto border border-gray-200">
-                          {value.map((item, index) => (
-                            <li key={index}>{listFields[key](item)}</li>
-                          ))}
-                        </ul>
-                      ) : (
-                        <p className="bg-gray-50 px-3 py-2 rounded text-gray-800 border border-gray-200">-</p>
-                      )}
-                    </div>
-                  );
-                }
-
-                // Default fields
-                return (
-                  <div key={key} className="flex flex-col">
-                    <label className="text-gray-700 font-medium mb-1">
-                      {key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
-                    </label>
-                    {editMode ? (
-                      <input
-                        type="text"
-                        value={value || ''}
-                        onChange={(e) => setEditedAgreement(prev => ({ ...prev, [key]: e.target.value }))}
-                        className="border border-gray-300 px-4 py-2 rounded-md focus:outline-none focus:ring-2 focus:ring-[#D9AC42] w-full"
-                      />
-                    ) : (
-                      <p className="text-gray-800 bg-gray-50 px-3 py-2 rounded border border-gray-200">{value || '-'}</p>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-
-            <div className="flex justify-end gap-4 mt-8 pt-4 border-t border-gray-200">
-              {editMode ? (
-                <button 
-                  onClick={handleSaveEdit} 
-                  className="bg-[#D9AC42] text-white py-2 px-6 rounded-lg hover:bg-[#c3932d] transition"
-                >
-                  Save Changes
-                </button>
-              ) : null}
+            <div className="p-6 border-t border-gray-200 flex justify-end gap-3">
               <button
                 onClick={() => setSelectedAgreement(null)}
-                className="bg-gray-200 text-gray-700 py-2 px-6 rounded-lg hover:bg-gray-300 transition"
+                className="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-100"
               >
-                Close
+                Cancel
+              </button>
+              <button
+                onClick={handleSaveEdit}
+                className="px-6 py-2 bg-[#1F2163] text-white rounded-lg hover:bg-[#0F1153] disabled:opacity-70"
+              >
+                Save
               </button>
             </div>
           </div>
