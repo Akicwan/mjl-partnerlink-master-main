@@ -3,6 +3,15 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import 'leaflet/dist/leaflet.css';
 import { supabase } from '../lib/supabaseClient';
+import {
+  PieChart,
+  Pie,
+  Cell,
+  Tooltip,
+  Legend,
+  ResponsiveContainer
+} from 'recharts';
+
 export default function PublicDashboard() {
   const router = useRouter();
   const [agreements, setAgreements] = useState([]);
@@ -15,16 +24,23 @@ export default function PublicDashboard() {
     universities: {}
   });
 
+  const [activityCounts, setActivityCounts] = useState({
+    student_mobility: 0,
+    staff_mobility: 0,
+    joint_research_publication: 0,
+    co_teaching_supervision: 0
+  });
+
   useEffect(() => {
     const fetchAgreements = async () => {
       setLoading(true);
       const { data, error } = await supabase.from('agreements_2').select('*');
-      
+
       if (error) {
         console.error("Error fetching agreement data:", error);
         setAgreements([]);
       } else {
-        const sortedAgreements = [...data].sort((a, b) => 
+        const sortedAgreements = [...data].sort((a, b) =>
           a.university.localeCompare(b.university)
         );
         setAgreements(sortedAgreements);
@@ -32,79 +48,96 @@ export default function PublicDashboard() {
       }
       setLoading(false);
     };
-    
+
     fetchAgreements();
   }, []);
 
   const calculateStats = (agreements) => {
-    const today = new Date();
-    const typeCounts = {};
-    const universityCounts = {};
-    
-    let active = 0;
-    let expired = 0;
-    
-    agreements.forEach(agreement => {
-      const type = agreement.agreement_type || 'Other';
-      typeCounts[type] = (typeCounts[type] || 0) + 1;
-      
-      const university = agreement.university || 'Unknown';
-      universityCounts[university] = (universityCounts[university] || 0) + 1;
-      
-      if (agreement.end_date) {
-        const endDate = new Date(agreement.end_date);
-        if (endDate < today) {
-          expired++;
-        } else {
-          active++;
-        }
-      }
-    });
-    
-    setStats({
-      totalAgreements: agreements.length,
-      activeAgreements: active,
-      expiredAgreements: expired,
-      agreementTypes: typeCounts,
-      universities: universityCounts
-    });
-  };
+  const today = new Date();
+  const typeCounts = {};
+  const universityCounts = {};
 
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      import('leaflet').then(L => {
-        const existingMap = L.DomUtil.get('map');
-        if (existingMap && existingMap._leaflet_id) return;
+  let active = 0;
+  let expired = 0;
 
-        const map = L.map('map', {
-          center: [36.2048, 138.2529],
-          zoom: 5,
-          zoomControl: false,
-          scrollWheelZoom: false,
-          attributionControl: false,
-          doubleClickZoom: false,
-          boxZoom: false,
-          keyboard: false,
-        });
+  let studentTotal = 0;
+  let staffTotal = 0;
+  let researchTotal = 0;
+  let publicationTotal = 0;
+  let coTeachingTotal = 0;
+  let supervisionTotal = 0;
 
-        L.tileLayer('https://{s}.basemaps.cartocdn.com/light_nolabels/{z}/{x}/{y}{r}.png', {
-          attribution: '&copy; <a href="https://carto.com/">CARTO</a>',
-        }).addTo(map);
+  agreements.forEach((agreement) => {
+    const type = agreement.agreement_type || 'Other';
+    typeCounts[type] = (typeCounts[type] || 0) + 1;
 
-        const bounds = [
-          [24.396308, 122.93457],
-          [45.551483, 153.986672],
-        ];
+    const university = agreement.university || 'Unknown';
+    universityCounts[university] = (universityCounts[university] || 0) + 1;
 
-        map.setMaxBounds(bounds);
-        map.on('drag', () => {
-          map.panInsideBounds(bounds, { animate: true });
-        });
-
-        window.leafletMap = map;
-      });
+    if (agreement.end_date) {
+      const endDate = new Date(agreement.end_date);
+      if (endDate < today) expired++;
+      else active++;
     }
-  }, []);
+
+    const parseArray = (val) => {
+      if (!val) return [];
+      if (Array.isArray(val)) return val;
+      try {
+        const parsed = JSON.parse(val);
+        return Array.isArray(parsed) ? parsed : [];
+      } catch {
+        return [];
+      }
+    };
+
+    // Student Mobility
+    const studentMobility = parseArray(agreement.student_mobility);
+    studentMobility.forEach(({ number_of_students }) => {
+      studentTotal += parseInt(number_of_students) || 0;
+    });
+
+    // Staff Mobility
+    const staffMobility = parseArray(agreement.staff_mobility);
+    staffMobility.forEach(() => {
+      staffTotal += 1;
+    });
+
+    // Joint Research
+    const jointResearch = parseArray(agreement.joint_research);
+    researchTotal += jointResearch.length;
+
+    // Joint Publications
+    const jointPublication = parseArray(agreement.joint_publication);
+    publicationTotal += jointPublication.length;
+
+    // Co-Teaching
+    const coTeaching = parseArray(agreement.co_teaching);
+    coTeachingTotal += coTeaching.length;
+
+    // Joint Supervision
+    const jointSupervision = parseArray(agreement.joint_supervision);
+    supervisionTotal += jointSupervision.length;
+  });
+
+  setStats({
+    totalAgreements: agreements.length,
+    activeAgreements: active,
+    expiredAgreements: expired,
+    agreementTypes: typeCounts,
+    universities: universityCounts
+  });
+
+  setActivityCounts({
+    student_mobility: studentTotal,
+    staff_mobility: staffTotal,
+    joint_research_publication: researchTotal + publicationTotal,
+    co_teaching_supervision: coTeachingTotal + supervisionTotal
+  });
+};
+
+
+
 
   const getTopItems = (items, count = 5) => {
     return Object.entries(items)
@@ -112,6 +145,15 @@ export default function PublicDashboard() {
       .slice(0, count)
       .map(([name, value]) => ({ name, value }));
   };
+
+  const pieData = [
+    { name: 'Student Mobility', value: activityCounts.student_mobility },
+    { name: 'Staff Mobility', value: activityCounts.staff_mobility },
+    { name: 'Joint Research & Publications', value: activityCounts.joint_research_publication },
+    { name: 'Co-Teaching & Supervision', value: activityCounts.co_teaching_supervision }
+  ];
+
+  const COLORS = ['#a0c4ff', '#ffd6a5', '#bdb2ff', '#ffadad'];
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-[#692B2C] to-[#1F2163] p-4">
@@ -162,20 +204,34 @@ export default function PublicDashboard() {
               <div className="bg-#fae7d4 border border-[#e1d9c4] p-6 rounded-2xl shadow-xl h-full">
                 <div className="flex items-center mb-4">
                   <span className="text-[#D9AC42] text-2xl mr-3">🗺️</span>
-                  <h2 className="text-2xl font-bold text-[#1F2163] tracking-tight">Our Partner Network</h2>
+                  <h2 className="text-2xl font-bold text-[#1F2163] tracking-tight">Exploring Our Partnership Activities</h2>
                 </div>
 
-                <div
-                  id="map"
-                  className="w-full h-96 rounded-xl border border-[#e1d9c4] bg-gray-100 shadow-inner"
-                  style={{
-                    boxShadow: 'inset 0 0 12px rgba(0, 0, 0, 0.04)',
-                    borderColor: '#e2e8f0'
-                  }}
-                ></div>
+                <div className="w-full h-96 rounded-xl border border-[#e1d9c4] bg-white shadow-inner flex items-center justify-center" style={{width: '100%', height: 430}}>
+                   <ResponsiveContainer>
+            <PieChart>
+              <Pie
+                data={pieData}
+                dataKey="value"
+                nameKey="name"
+                cx="50%"
+                cy="50%"
+                outerRadius={200}
+                label
+              >
+                {pieData.map((entry, index) => (
+                  <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                ))}
+              </Pie>
+              <Tooltip />
+              <Legend />
+            </PieChart>
+          </ResponsiveContainer>
+
+                </div>
 
                 <div className="mt-4 text-sm text-gray-600 text-right italic">
-                  Map highlights our active collaboration zones.
+                  Piechart highlights our total acitivities.
                 </div>
               </div>
             </div>
