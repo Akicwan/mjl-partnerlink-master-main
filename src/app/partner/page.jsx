@@ -5,7 +5,7 @@ import { supabase } from '../lib/supabaseClient';
 import Sidebar from '../components/Sidebar';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table';
 
-//import { FiInfo, FiCheckCircle, FiUsers, FiBook, FiBookmark, FiLayers } from 'react-icons/fi';
+import { FiInfo, FiCheckCircle, FiUsers, FiBook, FiBookmark, FiLayers } from 'react-icons/fi';
 
 
 
@@ -222,7 +222,7 @@ export default function PartnerDashboard() {
           ) : (
             <Table>
               <TableHeader>
-                <TableRow className="bg-[#1F2163] text-white">
+                <TableRow className="bg-[#1F2163] text-white hover:bg-[#1F2163]">
                   <TableHead className="text-white">Agreement Type</TableHead>
                   <TableHead className="text-white">Start Date</TableHead>
                   <TableHead className="text-white">End Date</TableHead>
