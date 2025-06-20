@@ -20,8 +20,8 @@ export default function Sidebar({ children, role, email }) {
     admin: [
       { name: 'Dashboard', href: '/admin', icon: '🏠' },
       { name: 'Agreements', href: '/admin/agreements', icon: '📝' },
-      { name: 'Universities', href: '/admin/university', icon: '🏛️' },
       { name: 'Add Agreement', href: '/admin/form', icon: '➕' },
+      { name: 'Universities', href: '/admin/university', icon: '🏛️' },
       { name: 'Users', href: '/admin/addUser', icon: '👥' },
     ],
     partner: [

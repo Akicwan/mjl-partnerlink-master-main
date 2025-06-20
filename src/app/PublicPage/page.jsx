@@ -216,7 +216,7 @@ export default function PublicDashboard() {
                 nameKey="name"
                 cx="50%"
                 cy="50%"
-                outerRadius={200}
+                outerRadius={150}
                 label
               >
                 {pieData.map((entry, index) => (
