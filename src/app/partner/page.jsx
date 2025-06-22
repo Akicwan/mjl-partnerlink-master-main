@@ -5,6 +5,7 @@ import { supabase } from '../lib/supabaseClient';
 import Sidebar from '../components/Sidebar';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table';
 
+
 import { FiInfo, FiCheckCircle, FiUsers, FiBook, FiBookmark, FiLayers } from 'react-icons/fi';
 
 
@@ -20,6 +21,9 @@ export default function PartnerDashboard() {
   const [selectedType, setSelectedType] = useState('');
   const [selectedYear, setSelectedYear] = useState('');
   const [selectedAgreement, setSelectedAgreement] = useState(null);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [agreementDetails, setAgreementDetails] = useState(null);
+
   const router = useRouter();
 
   const calculateTypeStats = (agreements) => {
@@ -121,8 +125,11 @@ export default function PartnerDashboard() {
   }, [selectedType, selectedYear, agreements]);
 
   const handleRowClick = (agreement) => {
-    setSelectedAgreement(agreement);
-  };
+  setSelectedAgreement(agreement);
+  setAgreementDetails(agreement);
+  setModalOpen(true);
+};
+
 
   const userName = userEmail ? userEmail.split('@')[0] : '';
 
@@ -259,194 +266,199 @@ export default function PartnerDashboard() {
       </div>
 
       {/* Agreement Details Modal */}
-      {selectedAgreement && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40 backdrop-blur-sm">
-          <div className="bg-white w-[90vw] max-w-5xl max-h-[90vh] overflow-y-auto rounded-2xl shadow-2xl">
-            <div className="bg-gradient-to-r from-[#1F2163] to-[#161A42] p-6 text-white">
-              <h2 className="text-2xl font-bold">Agreement Details</h2>
-              <p className="text-blue-100">{selectedAgreement.agreement_type || 'Agreement'}</p>
-            </div>
-            
-            <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-6">
-              {Object.entries(selectedAgreement).map(([key, value]) => {
-          if (key === 'id' || key === 'contacts' || key === 'others') return null;
+{modalOpen && agreementDetails && (
+  <div className="fixed inset-0 bg-gradient-to-b from-[#692B2C] to-[#1F2163] flex items-center justify-center p-4 z-50">
+    <div className="bg-white rounded-xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto">
+      <div className="p-6 border-b border-gray-200">
+        <h2 className="text-xl font-semibold text-[#1F2163]">Agreement Details</h2>
+      </div>
+
+      <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-6">
+        {[
+          'contacts',
+          'juc_member',
+          'academic_collab',
+          'jd_dd',
+          'joint_lab',
+          'co_teaching',
+          'staff_mobility',
+          'student_mobility',
+          'joint_supervision',
+          'research_collab',
+          'joint_research',
+          'joint_publication',
+          'start_date',
+          'end_date',
+          'i_kohza',
+          'pic_mjiit',
+          'others'
+        ].map((key) => {
+          const value = agreementDetails[key];
+          if (key === 'id') return null;
+
+          const isAcademicField = ['jd_dd', 'joint_lab', 'staff_mobility', 'student_mobility', 'joint_supervision', 'co_teaching'].includes(key);
+          const isResearchField = ['joint_research', 'joint_publication'].includes(key);
+
+          if ((isAcademicField && !agreementDetails.academic_collab) || (isResearchField && !agreementDetails.research_collab)) {
+            return null;
+          }
 
           if (key === 'start_date' || key === 'end_date') {
-            const label = key === 'start_date' ? 'Start Date' : 'End Date';
+            const date = value ? new Date(value) : new Date();
+
+            const year = date.getFullYear();
+            const month = date.getMonth() + 1;
+            const day = date.getDate();
+
             return (
-              <div key={key} className="flex flex-col">
-                <label className="block font-medium text-black mb-1">
-                  {label}
-                </label>
-                <p className="text-gray-800 bg-gray-100 px-3 py-2 rounded">
-                  {value ? new Date(value).toLocaleDateString() : '-'}
-                </p>
+              <div key={key} className="col-span-full">
+                <label className="text-sm text-gray-700 block mb-1">{key === 'start_date' ? 'Start Date' : 'End Date'}</label>
+                <div className="flex gap-2">
+                  <select
+                    value={year}
+                    disabled
+                    className="border border-gray-300 rounded px-2 py-1"
+                  >
+                    {[...Array(401)].map((_, i) => (
+                      <option key={i} value={new Date().getFullYear() - 200 + i}>{new Date().getFullYear() - 200 + i}</option>
+                    ))}
+                  </select>
+                  <select
+                    value={month}
+                    disabled
+                    className="border border-gray-300 rounded px-2 py-1"
+                  >
+                    {[...Array(12)].map((_, i) => (
+                      <option key={i} value={i + 1}>{i + 1}</option>
+                    ))}
+                  </select>
+                  <select
+                    value={day}
+                    disabled
+                    className="border border-gray-300 rounded px-2 py-1"
+                  >
+                    {[...Array(31)].map((_, i) => (
+                      <option key={i} value={i + 1}>{i + 1}</option>
+                    ))}
+                  </select>
+                </div>
               </div>
             );
           }
 
-          if (key === 'agreement_type') {
+          // Handle yes/no toggles (read-only)
+          if (key === 'juc_member' || key === 'academic_collab' || key === 'research_collab') {
+            const labelMap = {
+              juc_member: 'JUC Member',
+              academic_collab: 'Academic Collaboration',
+              research_collab: 'Research Collaboration'
+            };
+
             return (
-              <div key={key} className="flex flex-col">
-                <label className="text-[#1F2163] font-medium capitalize mb-1">
-                  Agreement Type:
-                </label>
-                <p className="text-gray-800 bg-gray-100 px-3 py-2 rounded">
-                  {value || '-'}
-                </p>
+              <div key={key} className="col-span-full">
+                <label className="text-sm text-gray-700 block mb-1">{labelMap[key]}</label>
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    disabled
+                    className={`px-4 py-2 rounded ${value === true ? 'bg-green-600 text-white' : 'bg-gray-200 text-gray-800'}`}
+                  >
+                    Yes
+                  </button>
+                  <button
+                    type="button"
+                    disabled
+                    className={`px-4 py-2 rounded ${value === false ? 'bg-red-600 text-white' : 'bg-gray-200 text-gray-800'}`}
+                  >
+                    No
+                  </button>
+                </div>
               </div>
             );
           }
 
-          if (['juc_member', 'academic_collab', 'research_collab'].includes(key)) {
+          // Render JSONB fields as read-only
+          const renderJsonArrayEditor = (key, label, fields) => {
+            let arr = [];
+            try {
+              arr = Array.isArray(value) ? value : JSON.parse(value) || [];
+            } catch {
+              arr = [];
+            }
+
             return (
-              <div key={key} className="flex flex-col">
-                <label className="text-[#1F2163] font-medium capitalize mb-1">
-                  {key.replace(/_/g, ' ')}:
-                </label>
-                <p className="text-gray-800 bg-gray-100 px-3 py-2 rounded">
-                  {value ? 'Yes' : 'No'}
-                </p>
+              <div key={key} className="col-span-full">
+                <label className="text-sm text-gray-700 block mb-1">{label}</label>
+                {arr.map((item, index) => (
+                  <div key={index} className="flex gap-2 items-center mb-2">
+                    {fields.map((field, i) => (
+                      <input
+                        key={i}
+                        type="text"
+                        placeholder={field.replace(/_/g, ' ')}
+                        value={item[field] || ''}
+                        disabled
+                        className="px-3 py-2 border border-gray-300 rounded-md"
+                      />
+                    ))}
+                  </div>
+                ))}
               </div>
             );
+          };
+
+          // === Handle JSON fields for Co-Teaching, Staff Mobility, etc. ===
+          if (key === 'co_teaching') {
+            return renderJsonArrayEditor('co_teaching', 'Co-Teaching', ['name', 'year']);
+          }
+          if (key === 'staff_mobility') {
+            return renderJsonArrayEditor('staff_mobility', 'Staff Mobility', ['name', 'year']);
+          }
+          if (key === 'student_mobility') {
+            return renderJsonArrayEditor('student_mobility', 'Student Mobility', ['name', 'year', 'number_of_students']);
+          }
+          if (key === 'joint_supervision') {
+            return renderJsonArrayEditor('joint_supervision', 'Joint Supervision', ['name', 'year']);
+          }
+          if (key === 'joint_research') {
+            return renderJsonArrayEditor('joint_research', 'Joint Research', ['name', 'year']);
+          }
+          if (key === 'joint_publication') {
+            return renderJsonArrayEditor('joint_publication', 'Joint Publication', ['publisher', 'author', 'year']);
+          }
+          if (key === 'contacts') {
+            return renderJsonArrayEditor('contacts', 'Contacts', ['name', 'email']);
+          }
+          if (key === 'others') {
+            return renderJsonArrayEditor('others', 'Others', ['field', 'value']);
           }
 
-         if (key === 'staff_mobility' && Array.isArray(value)) {
-  return (
-    <div key={key} className="flex flex-col">
-      <label className="text-[#1F2163] font-medium capitalize mb-1">Staff Mobility:</label>
-      {value.length > 0 ? (
-        <ul className="bg-gray-100 px-3 py-2 rounded text-gray-800 space-y-1 max-h-32 overflow-y-auto">
-          {value.map((item, index) => (
-            <li key={index}>• {item.name} ({item.year})</li>
-          ))}
-        </ul>
-      ) : (
-        <p className="bg-gray-100 px-3 py-2 rounded text-gray-800">-</p>
-      )}
-    </div>
-  );
-}
-
-if (key === 'student_mobility' && Array.isArray(value)) {
-  return (
-    <div key={key} className="flex flex-col">
-      <label className="text-[#1F2163] font-medium capitalize mb-1">Student Mobility:</label>
-      {value.length > 0 ? (
-        <ul className="bg-gray-100 px-3 py-2 rounded text-gray-800 space-y-1 max-h-32 overflow-y-auto">
-          {value.map((item, index) => (
-            <li key={index}>
-              • {item.name} ({item.year}) - {item.number_of_students} students
-            </li>
-          ))}
-        </ul>
-      ) : (
-        <p className="bg-gray-100 px-3 py-2 rounded text-gray-800">-</p>
-      )}
-    </div>
-  );
-}
-
-if (key === 'joint_supervision' && Array.isArray(value)) {
-  return (
-    <div key={key} className="flex flex-col">
-      <label className="text-[#1F2163] font-medium capitalize mb-1">Joint Supervision:</label>
-      {value.length > 0 ? (
-        <ul className="bg-gray-100 px-3 py-2 rounded text-gray-800 space-y-1 max-h-32 overflow-y-auto">
-          {value.map((item, index) => (
-            <li key={index}>• {item.name} ({item.year})</li>
-          ))}
-        </ul>
-      ) : (
-        <p className="bg-gray-100 px-3 py-2 rounded text-gray-800">-</p>
-      )}
-    </div>
-  );
-}
-
-if (key === 'joint_research' && Array.isArray(value)) {
-  return (
-    <div key={key} className="flex flex-col">
-      <label className="text-[#1F2163] font-medium capitalize mb-1">Joint Research:</label>
-      {value.length > 0 ? (
-        <ul className="bg-gray-100 px-3 py-2 rounded text-gray-800 space-y-1 max-h-32 overflow-y-auto">
-          {value.map((item, index) => (
-            <li key={index}>• {item.name} ({item.year})</li>
-          ))}
-        </ul>
-      ) : (
-        <p className="bg-gray-100 px-3 py-2 rounded text-gray-800">-</p>
-      )}
-    </div>
-  );
-}
-
-if (key === 'joint_publication' && Array.isArray(value)) {
-  return (
-    <div key={key} className="flex flex-col">
-      <label className="text-[#1F2163] font-medium capitalize mb-1">Joint Publication:</label>
-      {value.length > 0 ? (
-        <ul className="bg-gray-100 px-3 py-2 rounded text-gray-800 space-y-1 max-h-32 overflow-y-auto">
-          {value.map((item, index) => (
-            <li key={index}>
-              • {item.publisher} - {item.author} ({item.year})
-            </li>
-          ))}
-        </ul>
-      ) : (
-        <p className="bg-gray-100 px-3 py-2 rounded text-gray-800">-</p>
-      )}
-    </div>
-  );
-}
-
-if (key === 'co_teaching' && Array.isArray(value)) {
-  return (
-    <div key={key} className="flex flex-col">
-      <label className="text-[#1F2163] font-medium capitalize mb-1">Co Teaching:</label>
-      {value.length > 0 ? (
-        <ul className="bg-gray-100 px-3 py-2 rounded text-gray-800 space-y-1 max-h-32 overflow-y-auto">
-          {value.map((item, index) => (
-            <li key={index}>• {item.name} ({item.year})</li>
-          ))}
-        </ul>
-      ) : (
-        <p className="bg-gray-100 px-3 py-2 rounded text-gray-800">-</p>
-      )}
-    </div>
-  );
-}
-
-
-          // 🛠️ Fallback rendering for any other key
+          // Default for any other field
           return (
-            <div key={key} className="flex flex-col">
-              <label className="text-[#1F2163] font-medium capitalize mb-1">
-                {key.replace(/_/g, ' ')}:
-              </label>
-              <p className="text-gray-800 bg-gray-100 px-3 py-2 rounded whitespace-pre-wrap">
-                {typeof value === 'object' && value !== null
-                  ? Array.isArray(value)
-                    ? value.map((v) => (typeof v === 'object' ? JSON.stringify(v) : v)).join(', ')
-                    : Object.entries(value).map(([k, v]) => `${k}: ${v}`).join(', ')
-                  : value ?? '-'}
-              </p>
+            <div key={key} className="col-span-full">
+              <label className="text-sm text-gray-700 block mb-1">{key}</label>
+              <textarea
+                name={key}
+                value={value ?? ''}
+                disabled
+                className="w-full px-3 py-2 border border-gray-300 rounded-md resize-y min-h-[80px]"
+              />
             </div>
           );
         })}
       </div>
+      <div className="p-6 border-t border-gray-200 flex justify-end gap-3">
+        <button
+          onClick={() => setModalOpen(false)}
+          className="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-100"
+        >
+          Close
+        </button>
+      </div>
+    </div>
+  </div>
+)}
 
-      <div className="p-6 border-t border-gray-200 flex justify-end">
-              <button
-                onClick={() => setSelectedAgreement(null)}
-                className="px-6 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors"
-              >
-                Close
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </Sidebar>
   );
 }
